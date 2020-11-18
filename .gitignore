@@ -2,3 +2,4 @@
 .idea*
 vendor/*
 data/*
+example-config.yaml
