@@ -16,7 +16,7 @@ type BaseSalesforceClient struct {
 }
 
 func NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
-	client := simpleforce.NewClient(config.Salesforce.Endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
+	client := simpleforce.NewClient(config .Salesforce.Endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
 	if err := client.LoginPassword(config.Salesforce.Username, config.Salesforce.Password, config.Salesforce.SecurityToken); err != nil {
 		return nil, err
 	}

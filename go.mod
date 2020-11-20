@@ -11,6 +11,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.4 // indirect
 	github.com/nats-io/nats-streaming-server v0.19.0 // indirect
 	github.com/simpleforce/simpleforce v0.0.0-20201016131803-2062cbbdbb89
+	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.6.1
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )

@@ -5,9 +5,17 @@ import (
 	"io/ioutil"
 )
 
+type Collection struct {
+	Command   string   `yaml:"command"`
+	Timeout   string   `yaml:"timeout" default:"0s"`
+	Script    string   `yaml:"script"`
+	ExitCodes string   `yaml:"exit-codes" default:"any"`
+}
+
 type Config struct {
 	Monitor struct {
 		APIKey       string   `yaml:"api-key"`
+		PollEvery    string    `yaml:"poll-every" default:"5"`
 		Filetypes    []string `yaml:"filetypes"`
 		Directories  []string `yaml:"directories"`
 		ProcessorMap []struct {
@@ -17,14 +25,17 @@ type Config struct {
 		} `yaml:"processor-map"`
 	} `yaml:"monitor"`
 	Processor struct {
-		SubscribeTo []string `yaml:"subscribe-to"`
+		SubscribeTo []struct {
+			Topic   string `yaml:"topic"`
+			Reports  map[string]Collection `yaml:"reports"`
+		} `yaml:"subscribe-to"`
 	} `yaml:"processor"`
 	Salesforce struct {
 		Endpoint      string `yaml:"endpoint"`
 		Username      string `yaml:"username"`
 		Password      string `yaml:"password"`
 		SecurityToken string `yaml:"security-token"`
-	} `yaml:"common"`
+	} `yaml:"salesforce"`
 }
 
 func NewConfigFromFile(filepath string) (*Config, error) {

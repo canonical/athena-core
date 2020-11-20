@@ -1,38 +1,23 @@
 package monitor
 
 import (
+	"context"
 	"github.com/go-orm/gorm"
 	"github.com/lileio/pubsub/v2/providers/memory"
 	"github.com/niedbalski/go-athena/pkg/common"
+	"github.com/niedbalski/go-athena/pkg/common/test"
 	"github.com/niedbalski/go-athena/pkg/config"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"io/ioutil"
 	"testing"
+	"time"
 )
 
-var defaultTestConfig = `
-monitor:
-  api-key: "adc017510b7dec542da7494558d6567f42be0a8fa958497aef0b968738ab2222"
-  filetypes:
-      - "sosreport-*"
-  directories:
-      - "/uploads"
-      - "/uploads/sosreport"
-
-  processor-map:
-    - type: filename
-      regex: ".*sosreport.*$"
-      processor: sosreports
-
-    - type: case
-      regex: 00295561
-      processor: process-00295561
-
-processor:
-  subscribe-to:
-    - sosreports
-    - kernel
-`
+func init() {
+	logrus.SetOutput(ioutil.Discard)
+}
 
 type MonitorTestSuite struct {
 	suite.Suite
@@ -40,40 +25,33 @@ type MonitorTestSuite struct {
 	db *gorm.DB
 }
 
-type TestSalesforceClient struct {
-	common.BaseSalesforceClient
-}
-
-func (sf *TestSalesforceClient) GetCaseByNumber(number string) (*common.Case, error) {
-	return nil, nil
-}
-
-
 func (s *MonitorTestSuite) SetupTest() {
-	s.config, _ = config.NewConfigFromBytes([]byte(defaultTestConfig))
+	s.config, _ = config.NewConfigFromBytes([]byte(test.DefaultTestConfig))
 	s.db, _ = gorm.Open("sqlite3", "file::memory:?cache=shared")
 	s.db.AutoMigrate(common.File{})
 }
 
-
 func (s *MonitorTestSuite) TestRunMonitor() {
+	var files = []common.File{
+		{Path: "/uploads/sosreport-testing-1.tar.xz"},
+		{Path: "/uploads/sosreport-testing-2.tar.xz"},
+		{Path: "/uploads/sosreport-testing-3.tar.xz"},
+	}
 	filesClient, err := common.NewFilesComClient(func(apikey string, dirs []string) ([]common.File, error) {
-		return []common.File{
-			common.File{Path: "/uploads/sosreport-testing-1.tar.xz"},
-			common.File{Path: "/uploads/sosreport-testing-2.tar.xz"},
-			common.File{Path: "/uploads/sosreport-testing-3.tar.xz"},
-		}, nil
+		return files, nil
 	}, s.config.Monitor.APIKey)
 
 	assert.Nil(s.T(), err)
 	provider := &memory.MemoryProvider{}
-	monitor, err := NewMonitor(filesClient, &TestSalesforceClient{}, provider, s.config, s.db)
+	monitor, err := NewMonitor(filesClient, &test.TestSalesforceClient{}, provider, s.config, s.db)
 	assert.Nil(s.T(), err)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 
-	err = monitor.Run()
+	err = monitor.Run(ctx)
 
 	assert.Nil(s.T(), err)
-	assert.Equal(s.T(), len(provider.Msgs), 3)
+	assert.NotZero(s.T(), len(provider.Msgs["sosreports"]))
 }
 
 func TestMonitor(t *testing.T) {

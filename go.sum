@@ -194,7 +194,6 @@ github.com/lib/pq v1.8.0 h1:9xohqzkUwzR4Ga4ivdTcawVS89YSDVxXMa3xJX3cGzg=
 github.com/lib/pq v1.8.0/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/lileio/logr v1.1.0 h1:LXFoQueH0I683/P/k1vmOHXnr0OWTuj3FwMEuRNxgs0=
 github.com/lileio/logr v1.1.0/go.mod h1:tuh1La46EvEN9PYHlCNvZsk473ULi0GDsEvcEe6nQr0=
-github.com/lileio/pubsub v0.0.0-20190923214451-d1c628de58cb h1:gaylEq1xv2Y/NMI5vFWsrcl7YXXMokN41Q89zLtXSHI=
 github.com/lileio/pubsub/v2 v2.5.0 h1:iiw8Lr2MGdQ+pzvW3Hqw7Cd40BE5IZla1ne5HaJzau8=
 github.com/lileio/pubsub/v2 v2.5.0/go.mod h1:oMOyL8dwJdh/k5AEtFKiMNXQTeST8KNtQgetpWzgOXE=
 github.com/lpar/date v1.0.0 h1:bq/zVqFTUmsxvd/CylidY4Udqpr9BOFrParoP6p0x/I=

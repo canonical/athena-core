@@ -5,41 +5,36 @@ import (
 	"fmt"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
-	"github.com/lileio/pubsub/v2/providers/nats"
-	"github.com/niedbalski/go-athena/cmd"
-	"github.com/niedbalski/go-athena/pkg/config"
 	"github.com/niedbalski/go-athena/pkg/common"
+	"github.com/niedbalski/go-athena/pkg/config"
 	"os"
-	"os/signal"
-	"syscall"
+	"time"
 )
 
 type Processor struct {
-	Config           *config.Config
+	Config   *config.Config
+	FilesClient *common.FilesComClient
 	SalesforceClient common.SalesforceClient
+	Provider pubsub.Provider
 }
 
-type Subscriber struct {
+
+type BaseSubscriber struct {
 	Options pubsub.HandlerOptions
 }
 
-func (s *Subscriber) Setup(c *pubsub.Client) {
+func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 	c.On(s.Options)
 }
 
-type HelloMsg struct {
-	Greeting string
-	Name     string
-}
-
-func (s *Subscriber) Handler(ctx context.Context, msg *HelloMsg, m *pubsub.Msg) error {
+func (s *BaseSubscriber) Handler(ctx context.Context, msg *common.File, m *pubsub.Msg) error {
 	fmt.Printf("Message received %+v\n\n", m)
-	fmt.Printf(msg.Greeting + " " + msg.Name + "\n")
+	time.Sleep(15*time.Second)
 	return nil
 }
 
-func NewSubscriber(name, topic string) (*Subscriber) {
-	var subscriber = Subscriber{Options: pubsub.HandlerOptions{
+func NewBaseSubscriber(name, topic string) (*BaseSubscriber) {
+	var subscriber = BaseSubscriber{Options: pubsub.HandlerOptions{
 		Topic:   topic,
 		Name:    "athena-processor-" + name,
 		AutoAck: true,
@@ -49,37 +44,30 @@ func NewSubscriber(name, topic string) (*Subscriber) {
 	return &subscriber
 }
 
-func NewProcessor(params *cmd.DaemonParams) (*Processor, error) {
-	return &Processor{Config: params.Config, SalesforceClient: params.SFClient}, nil
+func NewProcessor(filesClient *common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider, cfg *config.Config) (*Processor, error) {
+	return &Processor{Provider: provider, FilesClient: filesClient, SalesforceClient: salesforceClient, Config: cfg}, nil
 }
 
-func (p *Processor) Run() (error) {
-	n, err := nats.NewNats("test-cluster")
-	if err != nil {
-		return err
-	}
-
-	pubsub.SetClient(&pubsub.Client{
-		ServiceName: "my-new-service",
-		Provider:    n,
-		Middleware:  defaults.Middleware,
-	})
-
+func (p *Processor) Run(ctx context.Context, newSubscriberFn func(name, topic string) pubsub.Subscriber) (error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err
 	}
 
-	for _, topic := range p.Config.Processor.SubscribeTo {
-		go pubsub.Subscribe(NewSubscriber(hostname, topic))
+	pubsub.SetClient(&pubsub.Client{
+		ServiceName: "athena-processor",
+		Provider:    p.Provider,
+		Middleware:  defaults.Middleware,
+	})
+
+	for _, event := range p.Config.Processor.SubscribeTo {
+		go pubsub.Subscribe(newSubscriberFn(hostname, event.Topic))
 	}
 
-	fmt.Println("Subscribing to queues..")
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
-	pubsub.Shutdown()
-	return nil
+	select {
+	case <- ctx.Done():
+		return nil
+	}
 }
 
 
