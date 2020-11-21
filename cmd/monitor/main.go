@@ -18,7 +18,7 @@ func main() {
 		panic(err)
 	}
 
-	filesClient, err := common.NewFilesComClient(common.GetFilesFromFilesCom, cfg.Monitor.APIKey)
+	filesClient, err := common.NewFilesComClient(cfg.Monitor.APIKey)
 	if err != nil {
 		panic(err)
 	}

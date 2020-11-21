@@ -18,7 +18,7 @@ import (
 type Monitor struct {
 	Db       *gorm.DB
 	Config   *config.Config
-	FilesClient *common.FilesComClient
+	FilesClient common.FilesComClient
 	SalesforceClient common.SalesforceClient
 	Provider pubsub.Provider
 }
@@ -51,7 +51,7 @@ func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]stri
 }
 
 func (m *Monitor) GetLatestFiles(dirs []string, duration time.Duration) ([]common.File, error) {
-	files, err := m.FilesClient.GetFiles(m.Config.Monitor.APIKey, dirs)
+	files, err := m.FilesClient.GetFiles(dirs)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,6 @@ func (m *Monitor) GetMatchingProcessorByFile(files []common.File) (map[string][]
 
 	for _, file := range files {
 		var processors []string
-
 		caseNumber, err := common.GetCaseNumberByFilename(file.Path)
 		if err == nil && caseNumber != "" {
 			sfCase, err = m.SalesforceClient.GetCaseByNumber(caseNumber)
@@ -98,7 +97,7 @@ func (m *Monitor) GetMatchingProcessorByFile(files []common.File) (map[string][]
 	return results, nil
 }
 
-func NewMonitor(filesClient *common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider, cfg *config.Config, db *gorm.DB) (*Monitor, error) {
+func NewMonitor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider, cfg *config.Config, db *gorm.DB) (*Monitor, error) {
 	if db == nil {
 		var err error
 		if db, err = gorm.Open("sqlite3", "main.db"); err != nil {

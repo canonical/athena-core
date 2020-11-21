@@ -40,9 +40,11 @@ func (s *MockSubscriber) Setup(c *pubsub.Client) {
 
 
 func (s *ProcessorTestSuite) TestRunProcessor() {
-	client, _ := common.NewFilesComClient(common.GetFilesFromFilesCom, s.config.Monitor.APIKey)
+	filesComClient := test.TestFilesComClient{}
+	salesforceClient := test.TestSalesforceClient{}
+
 	provider := &memory.MemoryProvider{}
-	processor, _ := NewProcessor(client, &test.TestSalesforceClient{}, provider, s.config)
+	processor, _ := NewProcessor(&filesComClient, &salesforceClient, provider, s.config)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
@@ -55,7 +57,7 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 
 	var called int = 0
 
-	err := processor.Run(ctx, func(name, topic string) pubsub.Subscriber {
+	err := processor.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name string, topic string, reports map[string]config.Report) pubsub.Subscriber {
 		var subscriber = MockSubscriber{Options: pubsub.HandlerOptions{
 			Topic:   topic,
 			Name:    "athena-processor-" + name,

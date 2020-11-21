@@ -32,18 +32,8 @@ func (s *MonitorTestSuite) SetupTest() {
 }
 
 func (s *MonitorTestSuite) TestRunMonitor() {
-	var files = []common.File{
-		{Path: "/uploads/sosreport-testing-1.tar.xz"},
-		{Path: "/uploads/sosreport-testing-2.tar.xz"},
-		{Path: "/uploads/sosreport-testing-3.tar.xz"},
-	}
-	filesClient, err := common.NewFilesComClient(func(apikey string, dirs []string) ([]common.File, error) {
-		return files, nil
-	}, s.config.Monitor.APIKey)
-
-	assert.Nil(s.T(), err)
 	provider := &memory.MemoryProvider{}
-	monitor, err := NewMonitor(filesClient, &test.TestSalesforceClient{}, provider, s.config, s.db)
+	monitor, err := NewMonitor(&test.TestFilesComClient{}, &test.TestSalesforceClient{}, provider, s.config, s.db)
 	assert.Nil(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()

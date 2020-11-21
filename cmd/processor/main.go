@@ -32,7 +32,7 @@ func main() {
 		panic(err)
 	}
 
-	filesClient, err := common.NewFilesComClient(common.GetFilesFromFilesCom, cfg.Monitor.APIKey)
+	filesClient, err := common.NewFilesComClient(cfg.Monitor.APIKey)
 	if err != nil {
 		panic(err)
 	}
@@ -47,16 +47,16 @@ func main() {
 		panic(err)
 	}
 
-	monitor, err := processor.NewProcessor(filesClient, sfClient, n, cfg)
+	p, err := processor.NewProcessor(filesClient, sfClient, n, cfg)
 	if err != nil {
 		panic(err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go monitor.Run(ctx, func(name, topic string) pubsub.Subscriber {
+	go p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name, topic string, reports map[string]config.Report) pubsub.Subscriber {
 		log.Infof("Subscribing: %s - to topic: %s", name, topic)
-		return processor.NewBaseSubscriber(name, topic)
+		return processor.NewBaseSubscriber(fc, sf, name, topic, reports)
 	});
 
 	c := make(chan os.Signal, 1)

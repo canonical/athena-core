@@ -2,7 +2,11 @@ package common
 
 import (
 	files_sdk "github.com/Files-com/files-sdk-go"
+	file "github.com/Files-com/files-sdk-go/file"
 	"github.com/Files-com/files-sdk-go/folder"
+	"github.com/sirupsen/logrus"
+	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -14,20 +18,33 @@ type File struct {
 	Md5sum  string    `gorm:"primary_key"`
 }
 
-type FilesGetter func(apikey string, dirs []string) ([]File, error)
+type FilesComClient interface {
+	GetFiles(dirs []string) ([]File, error)
+	Download(toDownload *File, downloadPath string) (*files_sdk.File, error)
+}
 
-type FilesComClient struct{
+type BaseFilesComClient struct{
+	FilesComClient
 	ApiKey string
-	GetFiles FilesGetter
+}
+func (client *BaseFilesComClient) Download(toDownload *File, downloadPath string) (*files_sdk.File, error) {
+	files_sdk.APIKey = client.ApiKey
+	fcClient := file.Client{}
+	////if err := os.MkdirAll(downloadPath, 0755); err != nil {
+	//	return nil, err
+	//}
+	logrus.Infof("downloading file: %s to path: %s", toDownload.Path, downloadPath)
+	fileEntry, err := fcClient.DownloadToFile(files_sdk.FileDownloadParams{Path: toDownload.Path}, path.Join(downloadPath, filepath.Base(toDownload.Path)))
+	// path.Join(downloadPath, filepath.Base(toDownload.Path)))
+	if err != nil {
+		return nil, err
+	}
+	return &fileEntry, nil
 }
 
-func NewFilesComClient(fg FilesGetter, apiKey string) (*FilesComClient, error) {
-	return &FilesComClient{GetFiles: fg, ApiKey: apiKey}, nil
-}
-
-func GetFilesFromFilesCom(apikey string, dirs []string) ([]File, error)	{
+func (client *BaseFilesComClient) GetFiles(dirs []string) ([]File, error) {
 	var files []File
-	files_sdk.APIKey = apikey
+	files_sdk.APIKey = client.ApiKey
 
 	for _, directory := range dirs {
 		params := files_sdk.FolderListForParams{Path: directory}
@@ -47,4 +64,8 @@ func GetFilesFromFilesCom(apikey string, dirs []string) ([]File, error)	{
 		}
 	}
 	return files, nil
+}
+
+func NewFilesComClient(apiKey string) (FilesComClient, error) {
+	return &BaseFilesComClient{ApiKey: apiKey}, nil
 }

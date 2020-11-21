@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 )
 
-type Collection struct {
+type Report struct {
 	Command   string   `yaml:"command"`
 	Timeout   string   `yaml:"timeout" default:"0s"`
 	Script    string   `yaml:"script"`
@@ -15,7 +15,7 @@ type Collection struct {
 type Config struct {
 	Monitor struct {
 		APIKey       string   `yaml:"api-key"`
-		PollEvery    string    `yaml:"poll-every" default:"5"`
+		PollEvery    string   `yaml:"poll-every" default:"5"`
 		Filetypes    []string `yaml:"filetypes"`
 		Directories  []string `yaml:"directories"`
 		ProcessorMap []struct {
@@ -27,7 +27,7 @@ type Config struct {
 	Processor struct {
 		SubscribeTo []struct {
 			Topic   string `yaml:"topic"`
-			Reports  map[string]Collection `yaml:"reports"`
+			Reports map[string]Report `yaml:"reports"`
 		} `yaml:"subscribe-to"`
 	} `yaml:"processor"`
 	Salesforce struct {
