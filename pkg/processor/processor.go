@@ -21,6 +21,7 @@ type Processor struct {
 	Config   *config.Config
 	FilesClient common.FilesComClient
 	SalesforceClient common.SalesforceClient
+	PastebinClient common.PastebinClient
 	Provider pubsub.Provider
 	Hostname string
 }
@@ -30,6 +31,8 @@ type BaseSubscriber struct {
 	Reports map[string]config.Report
 	SalesforceClient common.SalesforceClient
 	FilesComClient common.FilesComClient
+	PastebinClient common.PastebinClient
+	Config *config.Config
 }
 
 func (s *BaseSubscriber) Setup(c *pubsub.Client) {
@@ -40,6 +43,7 @@ type ReportToExecute struct {
 	Name, Command, BaseDir, ExitCodes string
 	File *common.File
 	Timeout 		time.Duration
+	Output    []byte
 }
 
 type ReportRunner struct {
@@ -69,37 +73,28 @@ func RunWithoutTimeout(report *ReportToExecute) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-func (runner *ReportRunner) Run() error {
-	var output []byte
+func  RunReport(report *ReportToExecute) ([]byte, error) {
+	if report.Timeout > 0 {
+		return RunWithTimeout(report)
+	}
+	return RunWithoutTimeout(report)
+}
 
-	fmt.Println("run called", runner.Reports)
+func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, error)) (map[string]string, error) {
+	var results = make(map[string]string)
 	for _, report := range runner.Reports {
 		var err error
-		if report.Timeout > 0 {
-			output, err = RunWithTimeout(&report)
-		} else {
-			output, err = RunWithoutTimeout(&report)
-		}
-
+		output, err := reportFn(&report)
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
-
-		fmt.Println(report.Command, report.Name, string(output))
-
-		//if err != nil && !IsValidExitCode(report.ExitCodes) {
-		//	errMsg := fmt.Errorf("Command for collector %s exited with exit code: %s - (not allowed by exit-codes config)",
-		//		task.Name, err.Error())
-		//	log.Error(errMsg)
-		//	return errMsg
-		//}
-
+		results[report.Name] = string(output)
 	}
-	return nil
+	return results, nil
 }
 
-const DEFAULT_EXECUTION_TIMEOUT = "2m"
+const DefaultExecutionTimeout = "2m"
 
 func renderTemplate(ctx *pongo2.Context, data string) (string, error) {
 	tpl, err := pongo2.FromString(data)
@@ -170,7 +165,7 @@ func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name 
 
 		timeout, err := time.ParseDuration(report.Timeout)
 		if err != nil {
-			timeout, _ = time.ParseDuration(DEFAULT_EXECUTION_TIMEOUT)
+			timeout, _ = time.ParseDuration(DefaultExecutionTimeout)
 		}
 
 		reportToExecute := ReportToExecute{}
@@ -186,34 +181,67 @@ func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name 
 	return &reportRunner, nil
 }
 
-func (s *BaseSubscriber) Handler(ctx context.Context, file *common.File, m *pubsub.Msg) error {
+func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub.Msg) error {
 	runner, err := NewReportRunner(s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
 	if err != nil {
 		return err
 	}
-	return runner.Run()
+
+	reports, err := runner.Run(RunReport)
+	if err != nil {
+		return err
+	}
+
+	url, err := s.PastebinClient.Paste(reports, &common.PastebinOptions{Public: false})
+	if err != nil {
+		return err
+	}
+
+	var tplContext pongo2.Context
+
+	//TODO: move this into a function
+	for _, event := range s.Config.Processor.SubscribeTo {
+		if event.Topic == s.Options.Topic {
+			//TODO: document the template variables
+			tplContext = pongo2.Context{
+				"processor":  s.Options.Name,
+				"filename": file.Path,
+				"pastebin_url": url,
+				"reports": reports,
+			}
+			//TODO: post a SF comment :-)
+			fmt.Println(renderTemplate(&tplContext, event.SFComment))
+			break
+		}
+	}
+
+	return nil
 }
 
-func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, name, topic string, reports map[string]config.Report) (*BaseSubscriber) {
+func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, pastebinClient common.PastebinClient, name, topic string, reports map[string]config.Report, cfg *config.Config) (*BaseSubscriber) {
 	var subscriber = BaseSubscriber{Options: pubsub.HandlerOptions{
 		Topic:   topic,
 		Name:    "athena-processor-" + name,
 		AutoAck: true,
 		JSON:    true,
 	}, Reports: reports}
+
 	subscriber.FilesComClient = filesClient
 	subscriber.SalesforceClient = salesforceClient
+	subscriber.PastebinClient = pastebinClient
 	subscriber.Options.Handler = subscriber.Handler
+	subscriber.Config = cfg
 	return &subscriber
 }
 
-func NewProcessor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider, cfg *config.Config) (*Processor, error) {
+func NewProcessor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, pastebinClient common.PastebinClient,
+	provider pubsub.Provider, cfg *config.Config) (*Processor, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Processor{Hostname: hostname, Provider: provider, FilesClient: filesClient, SalesforceClient: salesforceClient, Config: cfg}, nil
+	return &Processor{Hostname: hostname, Provider: provider, FilesClient: filesClient, SalesforceClient: salesforceClient, PastebinClient: pastebinClient, Config: cfg}, nil
 }
 
 func (p *Processor) getReportsByTopic(topic string) map[string]config.Report{
@@ -231,8 +259,8 @@ func (p *Processor) getReportsByTopic(topic string) map[string]config.Report{
 }
 
 func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient common.FilesComClient,
-	salesforceClient common.SalesforceClient,
-	name, topic string, reports map[string]config.Report) pubsub.Subscriber) error {
+	salesforceClient common.SalesforceClient, pb common.PastebinClient,
+	name, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber) error {
 
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
@@ -241,7 +269,8 @@ func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient co
 	})
 
 	for _, event := range p.Config.Processor.SubscribeTo {
-		go pubsub.Subscribe(newSubscriberFn(p.FilesClient, p.SalesforceClient, p.Hostname, event.Topic, p.getReportsByTopic(event.Topic)))
+		go pubsub.Subscribe(newSubscriberFn(p.FilesClient, p.SalesforceClient, p.PastebinClient,
+			p.Hostname, event.Topic, p.getReportsByTopic(event.Topic), p.Config))
 	}
 
 	select {

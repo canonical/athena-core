@@ -42,21 +42,26 @@ func main() {
 		panic(err)
 	}
 
+	pbClient, err := common.NewPastebinClient(cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	n, err := nats.NewNats("test-cluster")
 	if err != nil {
 		panic(err)
 	}
 
-	p, err := processor.NewProcessor(filesClient, sfClient, n, cfg)
+	p, err := processor.NewProcessor(filesClient, sfClient, pbClient, n, cfg)
 	if err != nil {
 		panic(err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name, topic string, reports map[string]config.Report) pubsub.Subscriber {
+	go p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, pb common.PastebinClient, name, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber {
 		log.Infof("Subscribing: %s - to topic: %s", name, topic)
-		return processor.NewBaseSubscriber(fc, sf, name, topic, reports)
+		return processor.NewBaseSubscriber(fc, sf, pb, name, topic, reports, cfg)
 	});
 
 	c := make(chan os.Signal, 1)

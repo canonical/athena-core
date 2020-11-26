@@ -27,6 +27,7 @@ type Config struct {
 	Processor struct {
 		SubscribeTo []struct {
 			Topic   string `yaml:"topic"`
+			SFComment string `yaml:"sf-comment"`
 			Reports map[string]Report `yaml:"reports"`
 		} `yaml:"subscribe-to"`
 	} `yaml:"processor"`
@@ -36,6 +37,10 @@ type Config struct {
 		Password      string `yaml:"password"`
 		SecurityToken string `yaml:"security-token"`
 	} `yaml:"salesforce"`
+	Pastebin struct {
+		Key			  string `yaml:"key"`
+		Provider	  string `yaml:"provider"`
+	} `yaml:"pastebin"`
 }
 
 func NewConfigFromFile(filepath string) (*Config, error) {
