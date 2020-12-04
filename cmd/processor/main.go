@@ -62,7 +62,7 @@ func main() {
 	go p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, pb common.PastebinClient, name, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber {
 		log.Infof("Subscribing: %s - to topic: %s", name, topic)
 		return processor.NewBaseSubscriber(fc, sf, pb, name, topic, reports, cfg)
-	});
+	})
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

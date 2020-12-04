@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const DefaultFilesAgeDelta = 10*time.Second
+const DefaultFilesAgeDelta = 10 * time.Second
 
 type File struct {
 	Created time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
@@ -23,10 +23,11 @@ type FilesComClient interface {
 	Download(toDownload *File, downloadPath string) (*files_sdk.File, error)
 }
 
-type BaseFilesComClient struct{
+type BaseFilesComClient struct {
 	FilesComClient
 	ApiKey string
 }
+
 func (client *BaseFilesComClient) Download(toDownload *File, downloadPath string) (*files_sdk.File, error) {
 	files_sdk.APIKey = client.ApiKey
 	fcClient := file.Client{}

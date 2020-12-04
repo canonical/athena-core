@@ -18,21 +18,21 @@ import (
 )
 
 type Processor struct {
-	Config   *config.Config
-	FilesClient common.FilesComClient
+	Config           *config.Config
+	FilesClient      common.FilesComClient
 	SalesforceClient common.SalesforceClient
-	PastebinClient common.PastebinClient
-	Provider pubsub.Provider
-	Hostname string
+	PastebinClient   common.PastebinClient
+	Provider         pubsub.Provider
+	Hostname         string
 }
 
 type BaseSubscriber struct {
-	Options pubsub.HandlerOptions
-	Reports map[string]config.Report
+	Options          pubsub.HandlerOptions
+	Reports          map[string]config.Report
 	SalesforceClient common.SalesforceClient
-	FilesComClient common.FilesComClient
-	PastebinClient common.PastebinClient
-	Config *config.Config
+	FilesComClient   common.FilesComClient
+	PastebinClient   common.PastebinClient
+	Config           *config.Config
 }
 
 func (s *BaseSubscriber) Setup(c *pubsub.Client) {
@@ -41,13 +41,13 @@ func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 
 type ReportToExecute struct {
 	Name, Command, BaseDir, ExitCodes string
-	File *common.File
-	Timeout 		time.Duration
-	Output    []byte
+	File                              *common.File
+	Timeout                           time.Duration
+	Output                            []byte
 }
 
 type ReportRunner struct {
-	Reports []ReportToExecute
+	Reports       []ReportToExecute
 	Name, Basedir string
 }
 
@@ -73,7 +73,7 @@ func RunWithoutTimeout(report *ReportToExecute) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-func  RunReport(report *ReportToExecute) ([]byte, error) {
+func RunReport(report *ReportToExecute) ([]byte, error) {
 	if report.Timeout > 0 {
 		return RunWithTimeout(report)
 	}
@@ -112,7 +112,7 @@ func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name 
 	var reportRunner ReportRunner
 	var command string
 
-	dir, err := ioutil.TempDir("/tmp", "athena-report-" + name)
+	dir, err := ioutil.TempDir("/tmp", "athena-report-"+name)
 	if err != nil {
 		return nil, err
 	}
@@ -127,10 +127,10 @@ func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name 
 
 	//TODO: document the template variables
 	tplContext := pongo2.Context{
-		"basedir": reportRunner.Basedir, // base dir used to generate reports
-		"file": fileEntry, // file entry as returned by the files.com api client
-		"filedir": path.Join(reportRunner.Basedir, filepath.Dir(fileEntry.Path)), //directory where the file lives on
-		"fullpath": path.Join(reportRunner.Basedir, fileEntry.Path), // full path to the file
+		"basedir":  reportRunner.Basedir,                                          // base dir used to generate reports
+		"file":     fileEntry,                                                     // file entry as returned by the files.com api client
+		"filedir":  path.Join(reportRunner.Basedir, filepath.Dir(fileEntry.Path)), //directory where the file lives on
+		"fullpath": path.Join(reportRunner.Basedir, fileEntry.Path),               // full path to the file
 	}
 
 	for name, report := range reports {
@@ -204,10 +204,10 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub
 		if event.Topic == s.Options.Topic {
 			//TODO: document the template variables
 			tplContext = pongo2.Context{
-				"processor":  s.Options.Name,
-				"filename": file.Path,
+				"processor":    s.Options.Name,
+				"filename":     file.Path,
 				"pastebin_url": url,
-				"reports": reports,
+				"reports":      reports,
 			}
 			//TODO: post a SF comment :-)
 			fmt.Println(renderTemplate(&tplContext, event.SFComment))
@@ -218,7 +218,7 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub
 	return nil
 }
 
-func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, pastebinClient common.PastebinClient, name, topic string, reports map[string]config.Report, cfg *config.Config) (*BaseSubscriber) {
+func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, pastebinClient common.PastebinClient, name, topic string, reports map[string]config.Report, cfg *config.Config) *BaseSubscriber {
 	var subscriber = BaseSubscriber{Options: pubsub.HandlerOptions{
 		Topic:   topic,
 		Name:    "athena-processor-" + name,
@@ -244,7 +244,7 @@ func NewProcessor(filesClient common.FilesComClient, salesforceClient common.Sal
 	return &Processor{Hostname: hostname, Provider: provider, FilesClient: filesClient, SalesforceClient: salesforceClient, PastebinClient: pastebinClient, Config: cfg}, nil
 }
 
-func (p *Processor) getReportsByTopic(topic string) map[string]config.Report{
+func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
 	var results map[string]config.Report
 
 	results = make(map[string]config.Report)
@@ -274,7 +274,7 @@ func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient co
 	}
 
 	select {
-	case <- ctx.Done():
+	case <-ctx.Done():
 		return nil
 	}
 }

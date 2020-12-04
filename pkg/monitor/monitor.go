@@ -14,37 +14,38 @@ import (
 	"time"
 )
 
-
 type Monitor struct {
-	Db       *gorm.DB
-	Config   *config.Config
-	FilesClient common.FilesComClient
+	Db               *gorm.DB
+	Config           *config.Config
+	FilesClient      common.FilesComClient
 	SalesforceClient common.SalesforceClient
-	Provider pubsub.Provider
+	Provider         pubsub.Provider
 }
 
 func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]string, error) {
 	var processors []string
-	for _, processor := range  m.Config.Monitor.ProcessorMap {
+	for _, processor := range m.Config.Monitor.ProcessorMap {
 		switch processor.Type {
-		case "filename": {
-			if ok, _ := regexp.Match(processor.Regex, []byte(filename)); ok {
-				processors = append(processors, processor.Processor)
+		case "filename":
+			{
+				if ok, _ := regexp.Match(processor.Regex, []byte(filename)); ok {
+					processors = append(processors, processor.Processor)
+				}
 			}
-		}
-		case "case": {
-			if c == nil {
-				continue
+		case "case":
+			{
+				if c == nil {
+					continue
+				}
+				if ok, _ := regexp.Match(processor.Regex, []byte(c.CaseNumber)); ok {
+					processors = append(processors, processor.Processor)
+				}
 			}
-			if ok, _ := regexp.Match(processor.Regex, []byte(c.CaseNumber)); ok {
-				processors = append(processors, processor.Processor)
-			}
-		}
 		default:
 			fmt.Printf("Not found handler for %s type", processor.Type)
 		}
 	}
-	if len(processors) <= 0{
+	if len(processors) <= 0 {
 		return nil, fmt.Errorf("Not found processors for %s", filename)
 	}
 	return processors, nil
@@ -126,7 +127,7 @@ func (m *Monitor) Run(ctx context.Context) error {
 	go func() {
 		for {
 			select {
-			case <- ticker.C:
+			case <-ticker.C:
 				latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, common.DefaultFilesAgeDelta)
 				if err != nil {
 					log.Error(err)
@@ -149,7 +150,7 @@ func (m *Monitor) Run(ctx context.Context) error {
 						}
 					}
 				}
-			case <- quit:
+			case <-quit:
 				ticker.Stop()
 				return
 			}
@@ -157,7 +158,8 @@ func (m *Monitor) Run(ctx context.Context) error {
 	}()
 
 	select {
-		case <-ctx.Done(): {
+	case <-ctx.Done():
+		{
 			close(quit)
 			return nil
 		}

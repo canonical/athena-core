@@ -16,7 +16,7 @@ type BaseSalesforceClient struct {
 }
 
 func NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
-	client := simpleforce.NewClient(config .Salesforce.Endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
+	client := simpleforce.NewClient(config.Salesforce.Endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
 	if err := client.LoginPassword(config.Salesforce.Username, config.Salesforce.Password, config.Salesforce.SecurityToken); err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ type Case struct {
 
 func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 	q := "SELECT Id,CaseNumber,AccountId FROM Case WHERE CaseNumber LIKE '%" + number + "%'"
- 	result, err := sf.Query(q)
+	result, err := sf.Query(q)
 	if err != nil {
 		return nil, err
 	}
@@ -38,10 +38,10 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 		account := sf.SObject("Account").Get(record.StringField("AccountId"))
 		if account != nil {
 			return &Case{
-				Id: record.StringField("Id"),
+				Id:         record.StringField("Id"),
 				CaseNumber: record.StringField("CaseNumber"),
-				AccountId: record.StringField("AccountId"),
-				Customer: account.StringField("Name"),
+				AccountId:  record.StringField("AccountId"),
+				Customer:   account.StringField("Name"),
 			}, nil
 		}
 	}

@@ -1,12 +1,12 @@
 package common
 
 import (
-	"fmt"
-	"github.com/niedbalski/go-athena/pkg/config"
-	"github.com/Ronmi/pastebin"
-	"golang.org/x/oauth2"
-	"github.com/google/go-github/github"
 	"context"
+	"fmt"
+	"github.com/Ronmi/pastebin"
+	"github.com/google/go-github/github"
+	"github.com/niedbalski/go-athena/pkg/config"
+	"golang.org/x/oauth2"
 )
 
 type PastebinClient interface {
@@ -53,8 +53,8 @@ func (gg *GithubGistClient) Paste(filenames map[string]string, opts *PastebinOpt
 
 	ctx := context.Background()
 	gist, _, err := client.Gists.Create(ctx, &github.Gist{
-		Public:      &opts.Public,
-		Files:       files,
+		Public: &opts.Public,
+		Files:  files,
 	})
 
 	if err != nil {
@@ -69,10 +69,13 @@ func (pb *BasePastebinClient) Paste(filenames map[string]string, opts *PastebinO
 }
 
 func NewPastebinClient(cfg *config.Config) (PastebinClient, error) {
-	switch cfg.Pastebin.Provider  {
-	case "github": return &GithubGistClient{BasePastebinClient{Config: cfg}}, nil
-	case "pastebincom": return &BasePastebinClient{Config: cfg}, nil
-	case "ubuntu": return &UbuntuPastebinClient{BasePastebinClient{Config: cfg}}, nil
+	switch cfg.Pastebin.Provider {
+	case "github":
+		return &GithubGistClient{BasePastebinClient{Config: cfg}}, nil
+	case "pastebincom":
+		return &BasePastebinClient{Config: cfg}, nil
+	case "ubuntu":
+		return &UbuntuPastebinClient{BasePastebinClient{Config: cfg}}, nil
 	}
 	return nil, fmt.Errorf("not found implementation for %s", cfg.Pastebin.Provider)
 }

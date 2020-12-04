@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 )
+
 type ProcessorTestSuite struct {
 	suite.Suite
 	config *config.Config
@@ -37,7 +38,6 @@ type MockSubscriber struct {
 func (s *MockSubscriber) Setup(c *pubsub.Client) {
 	c.On(s.Options)
 }
-
 
 func (s *ProcessorTestSuite) TestRunProcessor() {
 	filesComClient := test.TestFilesComClient{}

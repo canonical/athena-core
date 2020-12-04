@@ -22,7 +22,7 @@ func init() {
 type MonitorTestSuite struct {
 	suite.Suite
 	config *config.Config
-	db *gorm.DB
+	db     *gorm.DB
 }
 
 func (s *MonitorTestSuite) SetupTest() {

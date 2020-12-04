@@ -5,6 +5,5 @@ import (
 )
 
 type DaemonParams struct {
-	Config   *config.Config
+	Config *config.Config
 }
-

@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/providers/nats"
+	"github.com/niedbalski/go-athena/pkg/common"
 	"github.com/niedbalski/go-athena/pkg/config"
 	"github.com/niedbalski/go-athena/pkg/monitor"
-	"github.com/niedbalski/go-athena/pkg/common"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	sfClient , err := common.NewSalesforceClient(cfg)
+	sfClient, err := common.NewSalesforceClient(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	monitor, err := monitor.NewMonitor(filesClient, sfClient, n, cfg,nil)
+	monitor, err := monitor.NewMonitor(filesClient, sfClient, n, cfg, nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if err = monitor.Run(ctx); err != nil {
@@ -44,6 +44,5 @@ func main() {
 	<-c
 	cancel()
 	pubsub.Shutdown()
-
 
 }
