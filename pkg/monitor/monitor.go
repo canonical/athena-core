@@ -11,6 +11,7 @@ import (
 	"github.com/niedbalski/go-athena/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type Monitor struct {
 	FilesClient      common.FilesComClient
 	SalesforceClient common.SalesforceClient
 	Provider         pubsub.Provider
+	mu *sync.Mutex
 }
 
 func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]string, error) {
@@ -58,11 +60,10 @@ func (m *Monitor) GetLatestFiles(dirs []string, duration time.Duration) ([]commo
 	}
 
 	for _, file := range files {
-		m.Db.Where(common.File{Path: file.Path, Md5sum: file.Md5sum, Created: time.Now()}).FirstOrCreate(&file)
+		m.Db.Where(common.File{Path: file.Path, Md5sum: file.Md5sum}).FirstOrCreate(&file)
 	}
 
-	now := time.Now()
-	m.Db.Where("created >= ?", now.Add(-duration)).Find(&files)
+	m.Db.Where("created > ?", time.Now().Add(-duration)).Find(&files)
 	return files, nil
 }
 
@@ -106,7 +107,7 @@ func NewMonitor(filesClient common.FilesComClient, salesforceClient common.Sales
 		}
 		db.AutoMigrate(common.File{})
 	}
-	return &Monitor{Provider: provider, Db: db, FilesClient: filesClient, SalesforceClient: salesforceClient, Config: cfg}, nil
+	return &Monitor{Provider: provider, Db: db, FilesClient: filesClient, SalesforceClient: salesforceClient, Config: cfg, mu: new(sync.Mutex)}, nil
 }
 
 func (m *Monitor) Run(ctx context.Context) error {
@@ -116,51 +117,57 @@ func (m *Monitor) Run(ctx context.Context) error {
 		Middleware:  defaults.Middleware,
 	})
 
+	doEvery := func(ctx context.Context, d time.Duration, f func()) error {
+		ticker := time.Tick(d)
+		for {
+			select {
+				case <- ctx.Done():
+					return ctx.Err()
+				case <- ticker:
+					m.mu.Lock()
+					f()
+					m.mu.Unlock()
+			}
+		}
+	}
+
+	repeatCtx, cancel := context.WithCancel(context.Background())
+
 	pollEvery, err := time.ParseDuration(m.Config.Monitor.PollEvery)
 	if err != nil {
 		return err
 	}
 
-	ticker := time.NewTicker(pollEvery)
-	quit := make(chan struct{})
 
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, common.DefaultFilesAgeDelta)
-				if err != nil {
+	if err = doEvery(repeatCtx, pollEvery, func() {
+		latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, common.DefaultFilesAgeDelta)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		processors, err := m.GetMatchingProcessorByFile(latestFiles)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		log.Infof("Found %d new files, %d to be processed", len(latestFiles), len(processors))
+		for processor, files := range processors {
+			for _, file := range files {
+				log.Infof("Sending file: %s to processor: %s", file.Path, processor)
+				if err := pubsub.PublishJSON(context.Background(), processor, file); err != nil {
 					log.Error(err)
-					continue
 				}
-
-				processors, err := m.GetMatchingProcessorByFile(latestFiles)
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-
-				log.Infof("Found %d new files to be processed", len(latestFiles))
-
-				for processor, files := range processors {
-					for _, file := range files {
-						log.Infof("Sending file: %s to processor: %s", file.Path, processor)
-						if err := pubsub.PublishJSON(context.Background(), processor, file); err != nil {
-							log.Error(err)
-						}
-					}
-				}
-			case <-quit:
-				ticker.Stop()
-				return
 			}
 		}
-	}()
+	}); err != nil {
+		return err
+	}
 
 	select {
-	case <-ctx.Done():
-		{
-			close(quit)
+		case <-ctx.Done(): {
+			cancel()
 			return nil
 		}
 	}

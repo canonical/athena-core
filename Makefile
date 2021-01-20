@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+DOCKER_REPO ?= athena
 DOCKER_IMAGE_NAMES ?= processor monitor
 
 include Makefile.common

@@ -14,9 +14,11 @@ require (
 	github.com/lileio/pubsub/v2 v2.5.0
 	github.com/mattn/go-sqlite3 v1.14.4 // indirect
 	github.com/nats-io/nats-streaming-server v0.19.0 // indirect
+	github.com/nats-io/stan.go v0.7.0
 	github.com/simpleforce/simpleforce v0.0.0-20201016131803-2062cbbdbb89
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )

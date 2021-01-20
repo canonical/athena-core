@@ -2,6 +2,7 @@ go:
   # Whenever the Go version is updated here,
   # .circle/config.yml should also be updated.
   version: 1.15
+  cgo: true
 repository:
   path: github.com/niedbalski/go-athena
 build:
@@ -10,7 +11,7 @@ build:
       path: ./cmd/processor
     - name: athena-monitor
       path: ./cmd/monitor
-  flags: -mod=vendor -a -tags netgo,builtinassets
+  #flags: -mod=vendor -a -tags netgo,builtinassets
 tarball:
   files:
     - LICENSE
