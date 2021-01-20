@@ -1,0 +1,41 @@
+version: "3.3"
+services:
+  athena-monitor:
+    container_name: athena-monitor
+    image: athena/athena-monitor-linux-amd64:main
+    volumes:
+      - ./example-config.yaml:/etc/athena/main.yaml
+    command: /athena-monitor
+    depends_on:
+      - nats-streaming
+    networks:
+      - athena
+    restart: always
+
+  athena-processor:
+    container_name: athena-processor
+    image: athena/athena-processor-linux-amd64:main
+    volumes:
+      - ./example-config.yaml:/etc/athena/main.yaml
+    command: /athena-processor
+    depends_on:
+      - nats-streaming
+    networks:
+      - athena
+    restart: always
+
+  nats-streaming:
+    container_name: nats-streaming
+    image: nats-streaming
+    ports:
+      - '4222:4222'
+      - '8223:8223'
+      - 4222
+    environment:
+      - file
+    networks:
+      - athena
+
+networks:
+  athena:
+    driver: bridge
