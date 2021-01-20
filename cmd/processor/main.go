@@ -15,11 +15,10 @@ import (
 	"syscall"
 )
 
-
 var (
-	logLevel           = kingpin.Flag("log.level", "Log level: [debug, info, warn, error, fatal]").Default("info").String()
-	configPath	       = kingpin.Flag("config", "Path to the athena configuration file").Default("/etc/athena/main.yaml").Short('c').String()
-	natsUrl			   = kingpin.Flag("nats-url", "URL of the nats service").Default("nats://nats-streaming:4222").String()
+	logLevel   = kingpin.Flag("log.level", "Log level: [debug, info, warn, error, fatal]").Default("info").String()
+	configPath = kingpin.Flag("config", "Path to the athena configuration file").Default("/etc/athena/main.yaml").Short('c').String()
+	natsUrl    = kingpin.Flag("nats-url", "URL of the nats service").Default("nats://nats-streaming:4222").String()
 )
 
 func init() {
@@ -64,7 +63,7 @@ func main() {
 		panic(err)
 	}
 
-	natsClient, err := nats.NewNats( "test-cluster", stan.NatsURL(*natsUrl))
+	natsClient, err := nats.NewNats("test-cluster", stan.NatsURL(*natsUrl))
 	if err != nil {
 		panic(err)
 	}

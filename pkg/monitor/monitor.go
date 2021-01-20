@@ -21,7 +21,7 @@ type Monitor struct {
 	FilesClient      common.FilesComClient
 	SalesforceClient common.SalesforceClient
 	Provider         pubsub.Provider
-	mu *sync.Mutex
+	mu               *sync.Mutex
 }
 
 func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]string, error) {
@@ -121,12 +121,12 @@ func (m *Monitor) Run(ctx context.Context) error {
 		ticker := time.Tick(d)
 		for {
 			select {
-				case <- ctx.Done():
-					return ctx.Err()
-				case <- ticker:
-					m.mu.Lock()
-					f()
-					m.mu.Unlock()
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-ticker:
+				m.mu.Lock()
+				f()
+				m.mu.Unlock()
 			}
 		}
 	}
@@ -137,7 +137,6 @@ func (m *Monitor) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 
 	if err = doEvery(repeatCtx, pollEvery, func() {
 		latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, common.DefaultFilesAgeDelta)
@@ -166,7 +165,8 @@ func (m *Monitor) Run(ctx context.Context) error {
 	}
 
 	select {
-		case <-ctx.Done(): {
+	case <-ctx.Done():
+		{
 			cancel()
 			return nil
 		}
