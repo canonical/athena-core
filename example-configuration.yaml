@@ -1,0 +1,58 @@
+monitor:
+  api-key: "xxxx"
+  poll-every: 10s
+  filetypes:
+      - "sosreport-*"
+  directories:
+      - "/uploads"
+      - "/uploads/sosreport"
+
+  processor-map:
+    - type: filename
+      regex: ".*ovs.*$"
+      processor: sosreports
+
+    - type: case
+      regex: 00295561
+      processor: process-00295561
+
+processor:
+  subscribe-to:
+
+    - topic: sosreports
+      sf-comment: |
+        Athena
+
+        Processor: {{ processor }} has run the following reports on file: {{ filename }}
+
+        {% for report_name, _ in reports %}
+         * {{ report_name }}: {{ pastebin_url }}
+        {% endfor %}
+
+      reports:
+        hotsos:
+          exit-codes: 0 127 126
+          script: |
+            #!/bin/bash
+            echo "parameters: {{filedir}} {{basedir}} {{fullpath}}"
+
+    - topic: kernel
+      reports:
+        tcp_mem:
+          command: cat /proc/sys/net/ipv4/tcp*mem
+          exit-codes: 0
+        sar:
+          exit-codes: 0 127 126
+          script: |
+            #!/bin/bash
+            echo "testing"
+
+pastebin:
+  key: "xxxxxxxxxxxxxxxxxxxxxxxx"
+  provider: "github"
+
+salesforce:
+  endpoint: "https://xxxx.my.salesforce.com/"
+  username: "xxxxxx"
+  password: "xxxxxx"
+  security-token: "xxxxx"
