@@ -15,3 +15,8 @@ DOCKER_REPO ?= athena
 DOCKER_IMAGE_NAMES ?= processor monitor
 
 include Makefile.common
+
+docker-compose:
+	docker-compose down --remove-orphans && docker-compose up --force-recreate -d --build
+
+devel:  common-build common-docker docker-compose
