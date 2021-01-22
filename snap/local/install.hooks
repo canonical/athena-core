@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+[ -f $SNAP_COMMON/athena.default ] || cp $SNAP/athena.default $SNAP_COMMON/athena.default
+
