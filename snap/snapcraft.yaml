@@ -1,0 +1,38 @@
+name: athena
+base: core20
+version: git
+summary: Simple files processor
+description: |
+  Athena provides a procesor and a monitor.
+
+grade: stable
+confinement: strict
+
+apps:
+  processor:
+    command: bin/athena-processor.sh
+    plugs: [network, network-bind]
+    daemon: simple
+
+  monitor:
+    command: bin/athena-monitor.sh
+    plugs: [network, network-bind]
+    daemon: simple
+
+parts:
+  snap-wrappers:
+    plugin: dump
+    source: snap/local/
+    organize:
+      athena-processor.sh: bin/athena-processor.sh
+      athena-monitor.sh: bin/athena-monitor.sh
+      install.hooks: snap/hooks/install
+      post-refresh.hooks: snap/hooks/post-refresh
+    prime:
+      - athena.default
+      - bin/*
+      - snap/hooks/*
+  athena:
+    plugin: go
+    source: ./
+    after: [snap-wrappers]
