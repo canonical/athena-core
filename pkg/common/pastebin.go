@@ -45,9 +45,11 @@ func (gg *GithubGistClient) Paste(filenames map[string]string, opts *PastebinOpt
 
 	files := make(map[github.GistFilename]github.GistFile)
 	for filename, content := range filenames {
+		fname := filename
+		fcontent := content
 		files[github.GistFilename(filename)] = github.GistFile{
-			Filename: &filename,
-			Content:  &content,
+			Filename: &fname,
+			Content:  &fcontent,
 		}
 	}
 

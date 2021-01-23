@@ -9,6 +9,7 @@ import (
 
 type SalesforceClient interface {
 	GetCaseByNumber(number string) (*Case, error)
+	PostComment(caseId, body string, isPublic bool) (*simpleforce.SObject)
 }
 
 type BaseSalesforceClient struct {
@@ -25,6 +26,14 @@ func NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
 
 type Case struct {
 	Id, CaseNumber, AccountId, Customer string
+}
+
+func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) (*simpleforce.SObject){
+	return sf.SObject("CaseComment").
+		Set("ParentId", caseId).
+		Set("CommentBody", body).
+		Set("IsPublished", isPublic).
+		Create()
 }
 
 func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
