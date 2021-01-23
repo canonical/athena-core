@@ -5,7 +5,7 @@ services:
     image: athena/athena-monitor-linux-amd64:main
     volumes:
       - ./example-config.yaml:/etc/athena/main.yaml
-    command: /athena-monitor
+    command: /athena-monitor --log.level="debug"
     depends_on:
       - nats-streaming
     networks:
@@ -17,7 +17,7 @@ services:
     image: athena/athena-processor-linux-amd64:main
     volumes:
       - ./example-config.yaml:/etc/athena/main.yaml
-    command: /athena-processor
+    command: /athena-processor --log.level="debug"
     depends_on:
       - nats-streaming
     networks:

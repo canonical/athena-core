@@ -2,7 +2,6 @@ package processor
 
 import (
 	"context"
-	"fmt"
 	"github.com/flosch/pongo2/v4"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
@@ -84,7 +83,8 @@ func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, 
 	var results = make(map[string]string)
 	for _, report := range runner.Reports {
 		var err error
-		output, err := reportFn(&report)
+		var output []byte
+		output, err = reportFn(&report)
 		if err != nil {
 			logrus.Error(err)
 			continue
@@ -184,14 +184,17 @@ func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name 
 func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub.Msg) error {
 	runner, err := NewReportRunner(s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
 	if err != nil {
+		logrus.Error(err)
 		return err
 	}
 
+	logrus.Infof("Running reports on file: %s", file.Path)
 	reports, err := runner.Run(RunReport)
 	if err != nil {
 		return err
 	}
 
+	logrus.Infof("Running pastebin client for: %d reports", len(reports))
 	url, err := s.PastebinClient.Paste(reports, &common.PastebinOptions{Public: false})
 	if err != nil {
 		return err
@@ -209,9 +212,30 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub
 				"pastebin_url": url,
 				"reports":      reports,
 			}
-			//TODO: post a SF comment :-)
-			fmt.Println(renderTemplate(&tplContext, event.SFComment))
-			break
+			caseNumber, err := common.GetCaseNumberByFilename(file.Path)
+			if err != nil || caseNumber == "" {
+				logrus.Errorf("Not found case number on filename: %s", file.Path)
+				continue
+			}
+
+			logrus.Infof("Getting case from salesforce for number: %s", caseNumber)
+			sfCase, err := s.SalesforceClient.GetCaseByNumber(caseNumber)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+			renderedComment, err := renderTemplate(&tplContext, event.SFComment)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+			logrus.Debugf("Posting case comment (id: %s), body: %s", caseNumber, renderedComment)
+			comment := s.SalesforceClient.PostComment(sfCase.Id, renderedComment, true)
+			if comment == nil {
+				logrus.Errorf("Cannot post comment to case id: %s", sfCase.Id)
+				continue
+			}
+			logrus.Infof("Posted comment on case id: %s", caseNumber)
 		}
 	}
 
