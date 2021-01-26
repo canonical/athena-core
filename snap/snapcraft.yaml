@@ -1,11 +1,10 @@
 name: athena-core
 base: core20
-version: git
+version: "$VERSION"
 summary: Simple files processor
 description: |
   Athena provides a procesor and a monitor.
 
-grade: stable
 confinement: strict
 
 apps:
