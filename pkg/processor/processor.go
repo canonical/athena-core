@@ -269,9 +269,8 @@ func NewProcessor(filesClient common.FilesComClient, salesforceClient common.Sal
 }
 
 func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
-	var results map[string]config.Report
 
-	results = make(map[string]config.Report)
+	results := make(map[string]config.Report)
 	for _, c := range p.Config.Processor.SubscribeTo {
 		if c.Topic == topic {
 			for name, report := range c.Reports {
@@ -284,7 +283,7 @@ func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
 
 func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient common.FilesComClient,
 	salesforceClient common.SalesforceClient, pb common.PastebinClient,
-	name, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber) error {
+	name, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber) {
 
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
@@ -297,8 +296,5 @@ func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient co
 			p.Hostname, event.Topic, p.getReportsByTopic(event.Topic), p.Config))
 	}
 
-	select {
-	case <-ctx.Done():
-		return nil
-	}
+	<-ctx.Done()
 }

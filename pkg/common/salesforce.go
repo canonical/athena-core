@@ -9,7 +9,7 @@ import (
 
 type SalesforceClient interface {
 	GetCaseByNumber(number string) (*Case, error)
-	PostComment(caseId, body string, isPublic bool) (*simpleforce.SObject)
+	PostComment(caseId, body string, isPublic bool) *simpleforce.SObject
 }
 
 type BaseSalesforceClient struct {
@@ -28,7 +28,7 @@ type Case struct {
 	Id, CaseNumber, AccountId, Customer string
 }
 
-func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) (*simpleforce.SObject){
+func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) *simpleforce.SObject {
 	return sf.SObject("CaseComment").
 		Set("ParentId", caseId).
 		Set("CommentBody", body).
@@ -58,7 +58,7 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 }
 
 func GetCaseNumberByFilename(filename string) (string, error) {
-	regex, err := regexp.Compile("(\\d{6,})")
+	regex, err := regexp.Compile(`(\d{6,})`)
 	if err != nil {
 		return "", err
 	}

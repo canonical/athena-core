@@ -107,7 +107,7 @@ TAG_DOCKER_IMAGES = $(addprefix common-docker-tag-latest-,$(DOCKER_IMAGE_NAMES))
 ifeq ($(GOHOSTARCH),amd64)
         ifeq ($(GOHOSTOS),$(filter $(GOHOSTOS),linux freebsd darwin windows))
                 # Only supported on amd64
-                test-flags := -race
+                test-flags := -v
         endif
 endif
 
@@ -117,7 +117,7 @@ endif
 %: common-% ;
 
 .PHONY: common-all
-common-all: precheck style check_license lint unused build test
+common-all: precheck style lint unused build test
 
 .PHONY: common-style
 common-style:

@@ -38,9 +38,7 @@ func (s *MonitorTestSuite) TestRunMonitor() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	err = monitor.Run(ctx)
-
-	assert.Nil(s.T(), err)
+	_ = monitor.Run(ctx, 500*time.Millisecond)
 	assert.NotZero(s.T(), len(provider.Msgs["sosreports"]))
 }
 

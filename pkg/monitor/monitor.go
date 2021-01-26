@@ -110,7 +110,7 @@ func NewMonitor(filesClient common.FilesComClient, salesforceClient common.Sales
 	return &Monitor{Provider: provider, Db: db, FilesClient: filesClient, SalesforceClient: salesforceClient, Config: cfg, mu: new(sync.Mutex)}, nil
 }
 
-func (m *Monitor) Run(ctx context.Context) error {
+func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
 		Provider:    m.Provider,
@@ -118,7 +118,7 @@ func (m *Monitor) Run(ctx context.Context) error {
 	})
 
 	doEvery := func(ctx context.Context, d time.Duration, f func()) error {
-		ticker := time.Tick(d)
+		ticker := time.Tick(d) // nolint:staticcheck
 		for {
 			select {
 			case <-ctx.Done():
@@ -131,15 +131,19 @@ func (m *Monitor) Run(ctx context.Context) error {
 		}
 	}
 
-	repeatCtx, cancel := context.WithCancel(context.Background())
+	if ctx == nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(context.Background())
+		defer cancel()
+	}
 
 	pollEvery, err := time.ParseDuration(m.Config.Monitor.PollEvery)
 	if err != nil {
 		return err
 	}
 
-	if err = doEvery(repeatCtx, pollEvery, func() {
-		latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, common.DefaultFilesAgeDelta)
+	_ = doEvery(ctx, pollEvery, func() {
+		latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, filesAgeDelta)
 		if err != nil {
 			log.Error(err)
 			return
@@ -160,15 +164,8 @@ func (m *Monitor) Run(ctx context.Context) error {
 				}
 			}
 		}
-	}); err != nil {
-		return err
-	}
+	})
 
-	select {
-	case <-ctx.Done():
-		{
-			cancel()
-			return nil
-		}
-	}
+	<-ctx.Done()
+	return nil
 }
