@@ -1,4 +1,4 @@
-name: athena
+name: athena-core
 base: core20
 version: git
 summary: Simple files processor
