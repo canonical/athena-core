@@ -1,14 +1,15 @@
 on: [push]
 name: Publish snapstore edge
-env:
-  SHA8: ${GITHUB_SHA::8}
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Set outputs
+        id: vars
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
       - uses: actions/checkout@v2
       - name: Replace snapcraft version/grade
-        run: sed -i -e "s/\$VERSION/$SHA8/g" snap/snapcraft.yaml
+        run: sed -i -e "s/\$VERSION/${{ steps.vars.outputs.sha_short }}/g" snap/snapcraft.yaml
       - uses: snapcore/action-build@v1
         id: build
       - uses: snapcore/action-publish@v1
