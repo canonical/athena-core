@@ -40,7 +40,7 @@ func (gg *GithubGistClient) Paste(filenames map[string]string, opts *PastebinOpt
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: gg.Config.Pastebin.Key},
 	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	tc := oauth2.NewClient(context.Background(), ts)
 	client := github.NewClient(tc)
 
 	files := make(map[github.GistFilename]github.GistFile)
