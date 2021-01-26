@@ -1,12 +1,14 @@
 on: [push]
 name: Publish snapstore edge
+env:
+  SHA8: ${GITHUB_SHA::8}
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Replace snapcraft version/grade
-        run: sed -i -e "s/\$VERSION/${GITHUB_SHA}/g" snap/snapcraft.yaml
+        run: sed -i -e "s/\$VERSION/$SHA8/g" snap/snapcraft.yaml
       - uses: snapcore/action-build@v1
         id: build
       - uses: snapcore/action-publish@v1
