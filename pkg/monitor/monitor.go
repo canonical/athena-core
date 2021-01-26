@@ -159,7 +159,7 @@ func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
 		for processor, files := range processors {
 			for _, file := range files {
 				log.Infof("Sending file: %s to processor: %s", file.Path, processor)
-				if err := pubsub.PublishJSON(context.Background(), processor, file); err != nil {
+				if err := pubsub.PublishJSON(ctx, processor, file); err != nil {
 					log.Error(err)
 				}
 			}
