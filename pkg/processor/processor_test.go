@@ -42,9 +42,10 @@ func (s *MockSubscriber) Setup(c *pubsub.Client) {
 func (s *ProcessorTestSuite) TestRunProcessor() {
 	filesComClient := test.TestFilesComClient{}
 	salesforceClient := test.TestSalesforceClient{}
+	pastebinClient := test.TestPastebinClient{}
 
 	provider := &memory.MemoryProvider{}
-	processor, _ := NewProcessor(&filesComClient, &salesforceClient, provider, s.config)
+	processor, _ := NewProcessor(&filesComClient, &salesforceClient, &pastebinClient, provider, s.config)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
@@ -57,7 +58,8 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 
 	var called int = 0
 
-	err := processor.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name string, topic string, reports map[string]config.Report) pubsub.Subscriber {
+	processor.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, pb common.PastebinClient,
+		name string, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber {
 		var subscriber = MockSubscriber{Options: pubsub.HandlerOptions{
 			Topic:   topic,
 			Name:    "athena-processor-" + name,
@@ -72,7 +74,6 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 		return &subscriber
 	})
 
-	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), called, 2)
 	assert.Equal(s.T(), len(provider.Msgs), 2)
 }
