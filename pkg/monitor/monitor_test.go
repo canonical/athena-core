@@ -33,11 +33,10 @@ func (s *MonitorTestSuite) SetupTest() {
 
 func (s *MonitorTestSuite) TestRunMonitor() {
 	provider := &memory.MemoryProvider{}
-	monitor, err := NewMonitor(&test.TestFilesComClient{}, &test.TestSalesforceClient{}, provider, s.config, s.db)
+	monitor, err := NewMonitor(&test.FilesComClient{}, &test.SalesforceClient{}, provider, s.config, s.db)
 	assert.Nil(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-
 	_ = monitor.Run(ctx, 500*time.Millisecond)
 	assert.NotZero(s.T(), len(provider.Msgs["sosreports"]))
 }

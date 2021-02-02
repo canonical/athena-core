@@ -2,46 +2,42 @@ package test
 
 var DefaultTestConfig = `
 monitor:
-  api-key: "xxxxx"
-  poll-every: 500ms 
-  filetypes:
-    - "sosreport-*"
+  api-key: "xxx"
+  poll-every: 500ms
   directories:
-    - "/uploads"
-    - "/uploads/sosreport"
-
+      - "/uploads"
+      - "/uploads/sosreport"
   processor-map:
     - type: filename
-      regex: ".*sosreport.*$"
+      regex: ".*sosreport.*.tar.xz$"
       processor: sosreports
 
-    - type: case
-      regex: 00295561
-      processor: process-00295561
-
 processor:
-  subscribe-to:
-    - topic: sosreports
+  subscribers:
+    sosreports:
+      sf-comment: |
+        Athena
+
+        Processor: {{ processor }} has run the following reports on file: {{ filename }}
+
+        {% for report_name, _ in reports %}
+         * {{ report_name }}: {{ pastebin_url }}
+        {% endfor %}
+
       reports:
-        tcp_mem:
-          command: cat /proc/sys/net/ipv4/tcp*mem
-          exit-codes: 0
-        sar:
-          exit-codes: 0 127 126
+        hotsos:
+          exit-codes: 0 2 127 126
           script: |
             #!/bin/bash
-            echo "testing"
+            exit 0
 
-    - topic: kernel
-      reports:
-        tcp_mem:
-          command: cat /proc/sys/net/ipv4/tcp*mem
-          exit-codes: 0
+pastebin:
+  key: "xxx"
+  provider: "github"
 
-          # scripts can be defined inline
-        sar:
-          exit-codes: 0 127 126
-          script: |
-            #!/bin/bash
-            echo "testing"
+salesforce:
+  endpoint: "https://canonical--obiwan.my.salesforce.com/"
+  username: "xxx@canonical.com.obiwan"
+  password: "xxxx"
+  security-token: "xxxx"
 `

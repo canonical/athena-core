@@ -40,9 +40,9 @@ func (s *MockSubscriber) Setup(c *pubsub.Client) {
 }
 
 func (s *ProcessorTestSuite) TestRunProcessor() {
-	filesComClient := test.TestFilesComClient{}
-	salesforceClient := test.TestSalesforceClient{}
-	pastebinClient := test.TestPastebinClient{}
+	filesComClient := test.FilesComClient{}
+	salesforceClient := test.SalesforceClient{}
+	pastebinClient := test.PastebinClient{}
 
 	provider := &memory.MemoryProvider{}
 	processor, _ := NewProcessor(&filesComClient, &salesforceClient, &pastebinClient, provider, s.config)
@@ -51,19 +51,19 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 	defer cancel()
 
 	b, _ := json.Marshal(common.File{Path: "/uploads/sosreport-123.tar.xz"})
-	b1, _ := json.Marshal(common.File{Path: "/uploads/kernel-crashdump.tar.xz"})
+	b1, _ := json.Marshal(common.File{Path: "/uploads/sosreport-321.tar.xz"})
 
 	_ = provider.Publish(context.Background(), "sosreports", &pubsub.Msg{Data: b})
-	_ = provider.Publish(context.Background(), "kernel", &pubsub.Msg{Data: b1})
+	_ = provider.Publish(context.Background(), "sosreports", &pubsub.Msg{Data: b1})
 
-	var called int = 0
+	var called = 0
 
 	processor.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, pb common.PastebinClient,
 		name string, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber {
 		var subscriber = MockSubscriber{Options: pubsub.HandlerOptions{
 			Topic:   topic,
 			Name:    "athena-processor-" + name,
-			AutoAck: true,
+			AutoAck: false,
 			JSON:    true,
 		}}
 
@@ -75,7 +75,7 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 	})
 
 	assert.Equal(s.T(), called, 2)
-	assert.Equal(s.T(), len(provider.Msgs), 2)
+	assert.Equal(s.T(), len(provider.Msgs["sosreports"]), 2)
 }
 
 func TestNewProcessor(t *testing.T) {

@@ -127,10 +127,9 @@ func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name 
 
 	//TODO: document the template variables
 	tplContext := pongo2.Context{
-		"basedir":  reportRunner.Basedir,                                          // base dir used to generate reports
-		"file":     fileEntry,                                                     // file entry as returned by the files.com api client
-		"filedir":  path.Join(reportRunner.Basedir, filepath.Dir(fileEntry.Path)), //directory where the file lives on
-		"fullpath": path.Join(reportRunner.Basedir, fileEntry.Path),               // full path to the file
+		"basedir":  reportRunner.Basedir,                                           // base dir used to generate reports
+		"file":     fileEntry,                                                      // file entry as returned by the files.com api client
+		"filepath": path.Join(reportRunner.Basedir, filepath.Base(fileEntry.Path)), // directory where the file lives on
 	}
 
 	for name, report := range reports {
@@ -181,7 +180,12 @@ func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name 
 	return &reportRunner, nil
 }
 
-func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub.Msg) error {
+func (r *ReportRunner) Clean() error {
+	logrus.Infof("Removing base directory: %s for report: %s", r.Basedir, r.Name)
+	return os.RemoveAll(r.Basedir)
+}
+
+func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubsub.Msg) error {
 	runner, err := NewReportRunner(s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
 	if err != nil {
 		logrus.Error(err)
@@ -194,7 +198,12 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub
 		return err
 	}
 
-	logrus.Infof("Running pastebin client for: %d reports", len(reports))
+	if len(reports) <= 0 {
+		logrus.Errorf("No reports to process, %d reports", len(reports))
+		return nil
+	}
+
+	logrus.Infof("Running pastebin for: %d reports", len(reports))
 	url, err := s.PastebinClient.Paste(reports, &common.PastebinOptions{Public: false})
 	if err != nil {
 		return err
@@ -239,15 +248,19 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, _ *pubsub
 		}
 	}
 
-	return nil
+	msg.Ack()
+	return runner.Clean()
 }
+
+const defaultHandlerDeadline = 10 * time.Minute
 
 func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, pastebinClient common.PastebinClient, name, topic string, reports map[string]config.Report, cfg *config.Config) *BaseSubscriber {
 	var subscriber = BaseSubscriber{Options: pubsub.HandlerOptions{
-		Topic:   topic,
-		Name:    "athena-processor-" + name,
-		AutoAck: true,
-		JSON:    true,
+		Topic:    topic,
+		Name:     "athena-processor-" + name,
+		AutoAck:  false,
+		JSON:     true,
+		Deadline: defaultHandlerDeadline,
 	}, Reports: reports}
 
 	subscriber.FilesComClient = filesClient
@@ -269,11 +282,10 @@ func NewProcessor(filesClient common.FilesComClient, salesforceClient common.Sal
 }
 
 func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
-
 	results := make(map[string]config.Report)
-	for _, c := range p.Config.Processor.SubscribeTo {
-		if c.Topic == topic {
-			for name, report := range c.Reports {
+	for event, subscriber := range p.Config.Processor.SubscribeTo {
+		if event == topic {
+			for name, report := range subscriber.Reports {
 				results[name] = report
 			}
 		}
@@ -291,9 +303,9 @@ func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient co
 		Middleware:  defaults.Middleware,
 	})
 
-	for _, event := range p.Config.Processor.SubscribeTo {
+	for event := range p.Config.Processor.SubscribeTo {
 		go pubsub.Subscribe(newSubscriberFn(p.FilesClient, p.SalesforceClient, p.PastebinClient,
-			p.Hostname, event.Topic, p.getReportsByTopic(event.Topic), p.Config))
+			p.Hostname, event, p.getReportsByTopic(event), p.Config))
 	}
 
 	<-ctx.Done()

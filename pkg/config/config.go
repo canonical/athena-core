@@ -1,8 +1,8 @@
 package config
 
 import (
+	"github.com/makyo/snuffler"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
 )
 
 type Report struct {
@@ -10,6 +10,12 @@ type Report struct {
 	Timeout   string `yaml:"timeout" default:"0s"`
 	Script    string `yaml:"script"`
 	ExitCodes string `yaml:"exit-codes" default:"any"`
+}
+
+type Subscriber struct {
+	Topic     string            `yaml:"topic"`
+	SFComment string            `yaml:"sf-comment"`
+	Reports   map[string]Report `yaml:"reports"`
 }
 
 type Config struct {
@@ -23,34 +29,35 @@ type Config struct {
 			Regex     string `yaml:"regex"`
 			Processor string `yaml:"processor"`
 		} `yaml:"processor-map"`
-	} `yaml:"monitor"`
+	} `yaml:"monitor,omitempty"`
 	Processor struct {
-		SubscribeTo []struct {
-			Topic     string            `yaml:"topic"`
-			SFComment string            `yaml:"sf-comment"`
-			Reports   map[string]Report `yaml:"reports"`
-		} `yaml:"subscribe-to"`
-	} `yaml:"processor"`
+		SubscribeTo map[string]Subscriber `yaml:"subscribers,omitempty"`
+	} `yaml:"processor,omitempty"`
 	Salesforce struct {
 		Endpoint      string `yaml:"endpoint"`
 		Username      string `yaml:"username"`
 		Password      string `yaml:"password"`
 		SecurityToken string `yaml:"security-token"`
-	} `yaml:"salesforce"`
+	} `yaml:"salesforce,omitempty"`
 	Pastebin struct {
 		Key      string `yaml:"key"`
 		Provider string `yaml:"provider"`
-	} `yaml:"pastebin"`
+	} `yaml:"pastebin,omitempty"`
 }
 
-func NewConfigFromFile(filepath string) (*Config, error) {
+func NewConfigFromFile(filePaths []string) (*Config, error) {
 	var config Config
-	data, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return nil, err
+
+	s := snuffler.New(&config)
+	for _, filepath := range filePaths {
+		if err := s.AddFile(filepath); err != nil {
+			return nil, err
+		}
 	}
-	if err := yaml.Unmarshal(data, &config); err != nil {
+
+	if err := s.Snuffle(); err != nil {
 		return nil, err
+
 	}
 	return &config, nil
 }
