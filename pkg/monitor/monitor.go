@@ -111,6 +111,7 @@ func NewMonitor(filesClient common.FilesComClient, salesforceClient common.Sales
 }
 
 func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
+
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
 		Provider:    m.Provider,
