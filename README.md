@@ -1,6 +1,6 @@
 [![athena-monitor docker image](https://quay.io/repository/athena/athena-monitor-linux-amd64/status "Docker Repository on Quay")](https://quay.io/repository/athena/athena-monitor-linux-amd64)
 [![athena-processor docker image](https://quay.io/repository/athena/athena-processor-linux-amd64/status "Docker Repository on Quay")](https://quay.io/repository/athena/athena-processor-linux-amd64)
-![Build workflows](https://github.com/project-athena/athena-core/.github/workflows/tests.yml/badge.svg)
+![Build workflows](https://github.com/project-athena/athena-core/workflows/Test/badge.svg)
 
 # Athena
 
