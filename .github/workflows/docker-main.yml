@@ -10,6 +10,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Make docker images and publish
         run: |
+          make common-build
           make docker DOCKER_REPO=quay.io/athena DOCKER_ARCHS="amd64"
           docker images
           docker login -u ${{ secrets.QUAY_LOGIN }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
