@@ -1,0 +1,16 @@
+on:
+  push:
+    branches:
+      - main
+name: Publish docker images for main branch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Make docker images and publish
+        run: |
+          make docker DOCKER_REPO=quay.io/athena DOCKER_ARCHS="amd64"
+          docker images
+          docker login -u ${{ secrets.QUAY_LOGIN }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
+          make docker-publish DOCKER_REPO=quay.io/athena DOCKER_ARCHS="amd64"

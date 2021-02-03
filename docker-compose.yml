@@ -35,6 +35,7 @@ services:
       - file
     networks:
       - athena
+    restart: always
 
 networks:
   athena:
