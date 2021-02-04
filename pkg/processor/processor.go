@@ -202,69 +202,77 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubs
 	runner, err := NewReportRunner(s.Config, s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
 	if err != nil {
 		logrus.Error(err)
+		msg.Ack()
 		return err
 	}
 
 	logrus.Infof("Running reports on file: %s", file.Path)
 	reports, err := runner.Run(RunReport)
 	if err != nil {
+		msg.Ack()
+		_ = runner.Clean()
 		return err
 	}
 
 	if len(reports) <= 0 {
 		logrus.Errorf("No reports to process, %d reports", len(reports))
+		msg.Ack()
+		_ = runner.Clean()
 		return nil
 	}
 
 	logrus.Infof("Running pastebin for: %d reports", len(reports))
 	url, err := s.PastebinClient.Paste(reports, &common.PastebinOptions{Public: false})
 	if err != nil {
+		msg.Ack()
+		_ = runner.Clean()
 		return err
 	}
 
 	var tplContext pongo2.Context
 
 	//TODO: move this into a function
-	for _, event := range s.Config.Processor.SubscribeTo {
-		if event.Topic == s.Options.Topic {
-			//TODO: document the template variables
-			tplContext = pongo2.Context{
-				"processor":    s.Options.Name,
-				"filename":     file.Path,
-				"pastebin_url": url,
-				"reports":      reports,
-			}
-			caseNumber, err := common.GetCaseNumberByFilename(file.Path)
-			if err != nil || caseNumber == "" {
-				logrus.Errorf("Not found case number on filename: %s", file.Path)
-				continue
-			}
-
-			logrus.Infof("Getting case from salesforce for number: %s", caseNumber)
-			sfCase, err := s.SalesforceClient.GetCaseByNumber(caseNumber)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-			renderedComment, err := renderTemplate(&tplContext, event.SFComment)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-
-			if !event.SFCommentEnabled {
-				logrus.Warnf("Salesforce comments have been disabled, skipping case comment (id: %s)", caseNumber)
-				continue
-			}
-
-			logrus.Debugf("Posting case comment (id: %s), body: %s", caseNumber, renderedComment)
-			comment := s.SalesforceClient.PostComment(sfCase.Id, renderedComment, true)
-			if comment == nil {
-				logrus.Errorf("Cannot post comment to case id: %s", sfCase.Id)
-				continue
-			}
-			logrus.Infof("Posted comment on case id: %s", caseNumber)
+	for event_name, event := range s.Config.Processor.SubscribeTo {
+		if event_name != s.Options.Topic {
+			continue
 		}
+		//TODO: document the template variables
+		tplContext = pongo2.Context{
+			"processor":    s.Options.Name,
+			"filename":     file.Path,
+			"pastebin_url": url,
+			"reports":      reports,
+		}
+		caseNumber, err := common.GetCaseNumberByFilename(file.Path)
+		if err != nil || caseNumber == "" {
+			logrus.Errorf("Not found case number on filename: %s", file.Path)
+			continue
+		}
+
+		logrus.Infof("Getting case from salesforce for number: %s", caseNumber)
+		sfCase, err := s.SalesforceClient.GetCaseByNumber(caseNumber)
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+		renderedComment, err := renderTemplate(&tplContext, event.SFComment)
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+
+		if !event.SFCommentEnabled {
+			logrus.Warnf("Salesforce comments have been disabled, skipping case comment (id: %s)", caseNumber)
+			continue
+		}
+
+		logrus.Debugf("Posting case comment (id: %s), body: %s", caseNumber, renderedComment)
+		comment := s.SalesforceClient.PostComment(sfCase.Id, renderedComment, true)
+		if comment == nil {
+			logrus.Errorf("Cannot post comment to case id: %s", sfCase.Id)
+			continue
+		}
+		logrus.Infof("Posted comment on case id: %s", caseNumber)
 	}
 
 	msg.Ack()
