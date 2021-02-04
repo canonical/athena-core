@@ -10,6 +10,8 @@ import (
 	"github.com/niedbalski/go-athena/pkg/common"
 	"github.com/niedbalski/go-athena/pkg/config"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sync"
 	"time"
@@ -102,7 +104,15 @@ func (m *Monitor) GetMatchingProcessorByFile(files []common.File) (map[string][]
 func NewMonitor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider, cfg *config.Config, db *gorm.DB) (*Monitor, error) {
 	if db == nil {
 		var err error
-		if db, err = gorm.Open("sqlite3", "main.db"); err != nil {
+		log.Debugf("Using database path: %s", cfg.Monitor.DBPath)
+		if _, err := os.Stat(cfg.Monitor.DBPath); os.IsNotExist(err) {
+			log.Debugf("Database path: %s doesn't exists, creating", cfg.Monitor.DBPath)
+			if err = os.MkdirAll(cfg.Monitor.DBPath, 0755); err != nil {
+				return nil, err
+			}
+		}
+
+		if db, err = gorm.Open("sqlite3", filepath.Join(cfg.Monitor.DBPath, "main.db")); err != nil {
 			return nil, err
 		}
 		db.AutoMigrate(common.File{})

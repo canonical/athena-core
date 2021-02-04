@@ -267,7 +267,7 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubs
 		}
 
 		logrus.Debugf("Posting case comment (id: %s), body: %s", caseNumber, renderedComment)
-		comment := s.SalesforceClient.PostComment(sfCase.Id, renderedComment, true)
+		comment := s.SalesforceClient.PostComment(sfCase.Id, renderedComment, event.SFCommentIsPublic)
 		if comment == nil {
 			logrus.Errorf("Cannot post comment to case id: %s", sfCase.Id)
 			continue
