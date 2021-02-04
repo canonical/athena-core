@@ -13,9 +13,10 @@ type Report struct {
 }
 
 type Subscriber struct {
-	Topic     string            `yaml:"topic"`
-	SFComment string            `yaml:"sf-comment"`
-	Reports   map[string]Report `yaml:"reports"`
+	Topic            string            `yaml:"topic"`
+	SFCommentEnabled bool              `yaml:"sf-comment-enabled"`
+	SFComment        string            `yaml:"sf-comment"`
+	Reports          map[string]Report `yaml:"reports"`
 }
 
 type Config struct {
@@ -31,6 +32,7 @@ type Config struct {
 		} `yaml:"processor-map"`
 	} `yaml:"monitor,omitempty"`
 	Processor struct {
+		BaseTmpDir  string                `yaml:"base-tmpdir" default:""`
 		SubscribeTo map[string]Subscriber `yaml:"subscribers,omitempty"`
 	} `yaml:"processor,omitempty"`
 	Salesforce struct {
