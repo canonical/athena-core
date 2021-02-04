@@ -108,11 +108,24 @@ func renderTemplate(ctx *pongo2.Context, data string) (string, error) {
 	return out, nil
 }
 
-func NewReportRunner(sf common.SalesforceClient, fc common.FilesComClient, name string, file *common.File, reports map[string]config.Report) (*ReportRunner, error) {
+func NewReportRunner(cfg *config.Config, sf common.SalesforceClient, fc common.FilesComClient, name string, file *common.File, reports map[string]config.Report) (*ReportRunner, error) {
 	var reportRunner ReportRunner
 	var command string
 
-	dir, err := ioutil.TempDir("/tmp", "athena-report-"+name)
+	basePath := cfg.Processor.BaseTmpDir
+	if basePath == "" {
+		basePath = "/tmp"
+	}
+
+	logrus.Debugf("Using temporary base path: %s", basePath)
+	if _, err := os.Stat(basePath); os.IsNotExist(err) {
+		logrus.Debugf("Temporary base path: %s doesn't exists, creating", basePath)
+		if err = os.MkdirAll(basePath, 0755); err != nil {
+			return nil, err
+		}
+	}
+
+	dir, err := ioutil.TempDir(basePath, "athena-report-"+name)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +199,7 @@ func (r *ReportRunner) Clean() error {
 }
 
 func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubsub.Msg) error {
-	runner, err := NewReportRunner(s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
+	runner, err := NewReportRunner(s.Config, s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
 	if err != nil {
 		logrus.Error(err)
 		return err
@@ -238,6 +251,12 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubs
 				logrus.Error(err)
 				continue
 			}
+
+			if !event.SFCommentEnabled {
+				logrus.Warnf("Salesforce comments have been disabled, skipping case comment (id: %s)", caseNumber)
+				continue
+			}
+
 			logrus.Debugf("Posting case comment (id: %s), body: %s", caseNumber, renderedComment)
 			comment := s.SalesforceClient.PostComment(sfCase.Id, renderedComment, true)
 			if comment == nil {
