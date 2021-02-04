@@ -13,15 +13,17 @@ type Report struct {
 }
 
 type Subscriber struct {
-	Topic            string            `yaml:"topic"`
-	SFCommentEnabled bool              `yaml:"sf-comment-enabled"`
-	SFComment        string            `yaml:"sf-comment"`
-	Reports          map[string]Report `yaml:"reports"`
+	Topic             string            `yaml:"topic"`
+	SFCommentEnabled  bool              `yaml:"sf-comment-enabled"`
+	SFCommentIsPublic bool              `yaml:"sf-comment-public" default:"false"`
+	SFComment         string            `yaml:"sf-comment"`
+	Reports           map[string]Report `yaml:"reports"`
 }
 
 type Config struct {
 	Monitor struct {
 		APIKey       string   `yaml:"api-key"`
+		DBPath       string   `yaml:"db-path" default:"."`
 		PollEvery    string   `yaml:"poll-every" default:"5"`
 		Filetypes    []string `yaml:"filetypes"`
 		Directories  []string `yaml:"directories"`
