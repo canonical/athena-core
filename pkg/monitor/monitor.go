@@ -104,9 +104,9 @@ func (m *Monitor) GetMatchingProcessorByFile(files []common.File) (map[string][]
 func NewMonitor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider, cfg *config.Config, db *gorm.DB) (*Monitor, error) {
 	if db == nil {
 		var err error
-		log.Debugf("Using database path: %s", cfg.Monitor.DBPath)
+		log.Infof("Using database path: %s", cfg.Monitor.DBPath)
 		if _, err := os.Stat(cfg.Monitor.DBPath); os.IsNotExist(err) {
-			log.Debugf("Database path: %s doesn't exists, creating", cfg.Monitor.DBPath)
+			log.Infof("Database path: %s doesn't exists, creating", cfg.Monitor.DBPath)
 			if err = os.MkdirAll(cfg.Monitor.DBPath, 0755); err != nil {
 				return nil, err
 			}
