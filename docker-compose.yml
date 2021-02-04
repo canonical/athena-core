@@ -1,10 +1,26 @@
 version: "3.3"
 services:
+#  salesforce:
+#    container_name: salesforceapi
+#    image: outofcoffee/imposter-sfdc
+#    ports:
+#      - 8080:8080
+#    volumes:
+#      - ./mocks:/opt/imposter/config
+#    command: --configDir /opt/imposter/config --serverUrl http://localhost:8080
+#
+#  filescom:
+#    container_name: filescomapi
+#    image: filescom/files-mock-server:latest
+#    networks:
+#      - athena
+#    restart: always
+
   athena-monitor:
     container_name: athena-monitor
     image: athena/athena-monitor-linux-amd64:main
     volumes:
-      - ./example-config.yaml:/etc/athena/main.yaml
+      - ./development-config.yaml:/etc/athena/main.yaml
     command: /athena-monitor --log.level="debug"
     depends_on:
       - nats-streaming
@@ -16,8 +32,8 @@ services:
     container_name: athena-processor
     image: athena/athena-processor-linux-amd64:main
     volumes:
-      - ./example-config.yaml:/etc/athena/main.yaml
-    command: /athena-processor --log.level="debug"
+      - ./development-config.yaml:/etc/athena/main.yaml
+    command: /athena-processor --config /etc/athena/main.yaml --log.level="debug"
     depends_on:
       - nats-streaming
     networks:

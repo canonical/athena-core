@@ -22,7 +22,6 @@ type Subscriber struct {
 
 type Config struct {
 	Monitor struct {
-		APIKey       string   `yaml:"api-key"`
 		DBPath       string   `yaml:"db-path" default:"."`
 		PollEvery    string   `yaml:"poll-every" default:"5"`
 		Filetypes    []string `yaml:"filetypes"`
@@ -47,6 +46,11 @@ type Config struct {
 		Key      string `yaml:"key"`
 		Provider string `yaml:"provider"`
 	} `yaml:"pastebin,omitempty"`
+
+	FilesCom struct {
+		Key      string `yaml:"key"`
+		Endpoint string `yaml:"endpoint"`
+	} `yaml:"filescom,omitempty"`
 }
 
 func NewConfigFromFile(filePaths []string) (*Config, error) {
