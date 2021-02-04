@@ -19,9 +19,9 @@ type FilesComClient struct {
 }
 
 var files = []common.File{
-	{Path: "/uploads/sosreport-testing-1.tar.xz", Md5sum: "aabb"},
-	{Path: "/uploads/sosreport-testing-2.tar.xz", Md5sum: "bbcc"},
-	{Path: "/uploads/sosreport-testing-3.tar.xz", Md5sum: "ccdd"},
+	{Path: "/uploads/sosreport-testing-1.tar.xz"},
+	{Path: "/uploads/sosreport-testing-2.tar.xz"},
+	{Path: "/uploads/sosreport-testing-3.tar.xz"},
 }
 
 func (fc *FilesComClient) GetFiles(dirs []string) ([]common.File, error) {

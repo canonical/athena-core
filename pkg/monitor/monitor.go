@@ -62,7 +62,7 @@ func (m *Monitor) GetLatestFiles(dirs []string, duration time.Duration) ([]commo
 	}
 
 	for _, file := range files {
-		m.Db.Where(common.File{Path: file.Path, Md5sum: file.Md5sum}).FirstOrCreate(&file)
+		m.Db.Where(common.File{Path: file.Path}).FirstOrCreate(&file)
 	}
 
 	m.Db.Where("created > ?", time.Now().Add(-duration)).Find(&files)

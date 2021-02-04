@@ -15,7 +15,6 @@ const DefaultFilesAgeDelta = 10 * time.Second
 type File struct {
 	Created time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
 	Path    string    `gorm:"primary_key"`
-	Md5sum  string    `gorm:"primary_key"`
 }
 
 type FilesComClient interface {
@@ -56,12 +55,12 @@ func (client *BaseFilesComClient) GetFiles(dirs []string) ([]File, error) {
 
 		for it.Next() {
 			path := it.Folder().Path
-			sum := it.Folder().Md5
+			//sum := it.Folder().Md5
 			if it.Folder().Type == "directory" {
 				continue
 			}
 
-			files = append(files, File{Created: time.Now(), Path: path, Md5sum: sum})
+			files = append(files, File{Created: time.Now(), Path: path})
 		}
 	}
 	return files, nil
