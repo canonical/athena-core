@@ -1,0 +1,48 @@
+monitor:
+  db-path: "/tmp/athena"
+  poll-every: 10s
+  directories:
+      - "/uploads"
+  processor-map:
+    - type: filename
+      regex: ".*sosreport.*.txt$"
+      processor: sosreports
+
+processor:
+  base-tmpdir: "/tmp/athena"
+  subscribers:
+    sosreports:
+      sf-comment-enabled: true
+      sf-comment-public: false
+      sf-comment: |
+        Athena
+
+        Processor: {{ processor }} has run the following reports on file: {{ filename }}
+
+        {% for report_name, _ in reports %}
+         * {{ report_name }}: {{ pastebin_url }}
+        {% endfor %}
+
+
+        ----
+
+      reports:
+        hotsos:
+          exit-codes: 0 2 127 126
+          script: |
+            #!/bin/bash
+            echo ${{filepath}} ${{basedir}} && exit 0
+
+filescom:
+  key: "xxx"
+  endpoint: "https://app.files.com"
+
+pastebin:
+  key: "xxx"
+  provider: "github"
+
+salesforce:
+  endpoint: "https://xxx.my.salesforce.com/"
+  username: "xxx@xxx.com.xxx"
+  password: "xxx"
+  security-token: "xxx"

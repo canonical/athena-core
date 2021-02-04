@@ -24,18 +24,12 @@ type FilesComClient interface {
 
 type BaseFilesComClient struct {
 	FilesComClient
-	ApiKey string
+	ApiClient file.Client
 }
 
 func (client *BaseFilesComClient) Download(toDownload *File, downloadPath string) (*files_sdk.File, error) {
-	files_sdk.APIKey = client.ApiKey
-	fcClient := file.Client{}
-	////if err := os.MkdirAll(downloadPath, 0755); err != nil {
-	//	return nil, err
-	//}
 	logrus.Infof("downloading file: %s to path: %s", toDownload.Path, downloadPath)
-	fileEntry, err := fcClient.DownloadToFile(files_sdk.FileDownloadParams{Path: toDownload.Path}, path.Join(downloadPath, filepath.Base(toDownload.Path)))
-	// path.Join(downloadPath, filepath.Base(toDownload.Path)))
+	fileEntry, err := client.ApiClient.DownloadToFile(files_sdk.FileDownloadParams{Path: toDownload.Path}, path.Join(downloadPath, filepath.Base(toDownload.Path)))
 	if err != nil {
 		return nil, err
 	}
@@ -44,28 +38,27 @@ func (client *BaseFilesComClient) Download(toDownload *File, downloadPath string
 
 func (client *BaseFilesComClient) GetFiles(dirs []string) ([]File, error) {
 	var files []File
-	files_sdk.APIKey = client.ApiKey
 
+	fclient := folder.Client{Config: client.ApiClient.Config}
 	for _, directory := range dirs {
+		logrus.Infof("Listing files available on %s", directory)
 		params := files_sdk.FolderListForParams{Path: directory}
-		it, err := folder.ListFor(params)
+		it, err := fclient.ListFor(params)
 		if err != nil {
 			return nil, err
 		}
-
 		for it.Next() {
 			path := it.Folder().Path
 			//sum := it.Folder().Md5
 			if it.Folder().Type == "directory" {
 				continue
 			}
-
 			files = append(files, File{Created: time.Now(), Path: path})
 		}
 	}
 	return files, nil
 }
 
-func NewFilesComClient(apiKey string) (FilesComClient, error) {
-	return &BaseFilesComClient{ApiKey: apiKey}, nil
+func NewFilesComClient(apiKey, endpoint string) (FilesComClient, error) {
+	return &BaseFilesComClient{ApiClient: file.Client{Config: files_sdk.Config{APIKey: apiKey, Endpoint: endpoint}}}, nil
 }

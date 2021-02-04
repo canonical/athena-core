@@ -15,14 +15,13 @@ type Report struct {
 type Subscriber struct {
 	Topic             string            `yaml:"topic"`
 	SFCommentEnabled  bool              `yaml:"sf-comment-enabled"`
-	SFCommentIsPublic bool              `yaml:"sf-comment-public" default:false`
+	SFCommentIsPublic bool              `yaml:"sf-comment-public" default:"false"`
 	SFComment         string            `yaml:"sf-comment"`
 	Reports           map[string]Report `yaml:"reports"`
 }
 
 type Config struct {
 	Monitor struct {
-		APIKey       string   `yaml:"api-key"`
 		DBPath       string   `yaml:"db-path" default:"."`
 		PollEvery    string   `yaml:"poll-every" default:"5"`
 		Filetypes    []string `yaml:"filetypes"`
@@ -47,6 +46,11 @@ type Config struct {
 		Key      string `yaml:"key"`
 		Provider string `yaml:"provider"`
 	} `yaml:"pastebin,omitempty"`
+
+	FilesCom struct {
+		Key      string `yaml:"key"`
+		Endpoint string `yaml:"endpoint"`
+	} `yaml:"filescom,omitempty"`
 }
 
 func NewConfigFromFile(filePaths []string) (*Config, error) {
