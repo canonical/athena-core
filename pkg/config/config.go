@@ -15,7 +15,7 @@ type Report struct {
 type Subscriber struct {
 	Topic             string            `yaml:"topic"`
 	SFCommentEnabled  bool              `yaml:"sf-comment-enabled"`
-	SFCommentIsPublic bool              `yaml:"sf-comment-public" default:"false"`
+	SFCommentIsPublic bool              `yaml:"sf-comment-public" default:false`
 	SFComment         string            `yaml:"sf-comment"`
 	Reports           map[string]Report `yaml:"reports"`
 }
