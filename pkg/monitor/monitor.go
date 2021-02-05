@@ -169,10 +169,21 @@ func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
 		log.Infof("Found %d new files, %d to be processed", len(latestFiles), len(processors))
 		for processor, files := range processors {
 			for _, file := range files {
-				log.Infof("Sending file: %s to processor: %s", file.Path, processor)
-				if err := pubsub.PublishJSON(ctx, processor, file); err != nil {
-					log.Error(err)
+				if file.Dispatched {
+					log.Infof("File %s already dispatched at: %s, skipping", file.Path, file.DispatchedAt)
+					continue
 				}
+				log.Infof("Sending file: %s to processor: %s", file.Path, processor)
+				publishResults := pubsub.PublishJSON(ctx, processor, file)
+				if publishResults.Err != nil {
+					file.Dispatched = false
+					log.Errorf("Cannot dispatch file: %s to processor, error: %s", file.Path, err)
+				} else {
+					file.Dispatched = true
+					file.DispatchedAt = time.Now()
+					log.Debugf("file: %s -- flagged as dispatched at : %s", file.Path, file.DispatchedAt)
+				}
+				m.Db.Save(file)
 			}
 		}
 	})

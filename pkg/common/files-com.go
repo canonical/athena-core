@@ -13,8 +13,10 @@ import (
 const DefaultFilesAgeDelta = 10 * time.Second
 
 type File struct {
-	Created time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
-	Path    string    `gorm:"primary_key"`
+	Created      time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
+	DispatchedAt time.Time
+	Dispatched   bool   `gorm:"default:false"`
+	Path         string `gorm:"primary_key"`
 }
 
 type FilesComClient interface {
