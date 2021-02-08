@@ -35,3 +35,6 @@ parts:
     plugin: go
     source: ./
     after: [snap-wrappers]
+    stage-snaps:
+      - hotsos/latest/stable
+      - ovs-stat/latest/stable
