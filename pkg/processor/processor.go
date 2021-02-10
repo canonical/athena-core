@@ -327,7 +327,13 @@ func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
 }
 
 func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient common.FilesComClient,
-	salesforceClient common.SalesforceClient, name, topic string, reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber) {
+	salesforceClient common.SalesforceClient, name, topic string, reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber) error {
+
+	if ctx == nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(context.Background())
+		defer cancel()
+	}
 
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
@@ -339,5 +345,84 @@ func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient co
 		go pubsub.Subscribe(newSubscriberFn(p.FilesClient, p.SalesforceClient, p.Hostname, event, p.getReportsByTopic(event), p.Config, p.Db))
 	}
 
+
+	runOnInterval := func(ctx context.Context, d time.Duration, f func())  {
+		ticker := time.Tick(d) // nolint:staticcheck
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker:
+				f()
+			}
+		}
+	}
+
+
+	interval, err := time.ParseDuration(p.Config.Processor.BatchCommentsEvery)
+	if err != nil {
+		return err
+	}
+
+	var reportMap map[string]map[string][]db.Report
+
+	go runOnInterval(ctx, interval, func() {
+		var reports []db.Report
+
+		logrus.Info("Running process to send batched comments to salesforce on interval %s", interval)
+
+		if results := p.Db.Where("created >= ? and commented = ?", time.Now().Add(-interval), false).Find(&reports); results.Error != nil {
+			logrus.Error(results.Error)
+			return
+		}
+
+		if len(reports) <= 0 {
+			logrus.Errorf("Not found reports to be processed, skipping")
+			return
+		}
+
+
+		for _, report := range reports {
+			reportMap[report.CaseID][report.Name] = append(reportMap[report.Name][report.CaseID], report)
+		}
+
+		for caseId, reportsByType := range reportMap {
+			for reportName, reports := range reportsByType {
+				var tplContext pongo2.Context
+
+				subscriber, ok := p.Config.Processor.SubscribeTo[reportName]
+				if !ok {
+					logrus.Errorf("Not found subscriber for: %s", reportName)
+					continue
+				}
+
+				if !subscriber.SFCommentEnabled {
+					logrus.Warnf("Salesforce comments have been disabled, skipping comments")
+					continue
+				}
+
+				//TODO: document variables
+				tplContext = pongo2.Context{
+					"processor": p.Hostname,
+					"reports": reports,
+				}
+
+				renderedComment, err := renderTemplate(&tplContext, subscriber.SFComment)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
+
+				comment := p.SalesforceClient.PostComment(caseId, renderedComment, subscriber.SFCommentIsPublic)
+				if comment == nil {
+					   logrus.Errorf("Cannot post comment to case id: %s", caseId)
+					   continue
+				}
+				logrus.Infof("Posted comment on case id: %s", caseId)
+			}
+		}
+	})
+
 	<-ctx.Done()
+	return nil
 }

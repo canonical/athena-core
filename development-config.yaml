@@ -12,6 +12,7 @@ monitor:
       processor: sosreports
 
 processor:
+  batch-comments-every: 1m
   base-tmpdir: "/tmp/athena"
   subscribers:
     sosreports:
@@ -21,14 +22,11 @@ processor:
       sf-comment: |
         Athena
 
-        Processor: {{ processor }} has run the following reports on file: {{ filename }}
+        Processor: {{ processor }} has run the following reports:
 
-        {% for report_name, _ in reports %}
-         * {{ report_name }}: {{ pastebin_url }}
+        {% for _, report in reports %}
+         * {{report.{{report.upload_url}}{{ report_name }}: {{ pastebin_url }}
         {% endfor %}
-
-
-        ----
 
       reports:
         hotsos:
@@ -38,11 +36,11 @@ processor:
             echo ${{filepath}} ${{basedir}} && exit 0
 
 filescom:
-  key: "xxx"
+  key: "adc017510b7dec542da7494558d6567f42be0a8fa958497aef0b968738ab2035"
   endpoint: "https://app.files.com"
 
 salesforce:
   endpoint: "https://canonical--obiwan.my.salesforce.com/"
-  username: "jorge.xxx@canonical.com.obiwan"
-  password: "xxx"
-  security-token: "xxx"
+  username: "jorge.niedbalski@canonical.com.obiwan"
+  password: "avocado4life"
+  security-token: "qi84gPBTXzee6sI7nlEnQXcWM"
