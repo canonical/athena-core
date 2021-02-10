@@ -36,6 +36,7 @@ type Config struct {
 		} `yaml:"processor-map"`
 	} `yaml:"monitor,omitempty"`
 	Processor struct {
+		BatchCommentsEvery string `yaml:"batch-comments-every" default:"10m"`
 		BaseTmpDir  string                `yaml:"base-tmpdir" default:""`
 		SubscribeTo map[string]Subscriber `yaml:"subscribers,omitempty"`
 	} `yaml:"processor,omitempty"`

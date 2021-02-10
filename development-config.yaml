@@ -12,6 +12,7 @@ monitor:
       processor: sosreports
 
 processor:
+  batch-comments-every: 1m
   base-tmpdir: "/tmp/athena"
   subscribers:
     sosreports:
@@ -21,14 +22,11 @@ processor:
       sf-comment: |
         Athena
 
-        Processor: {{ processor }} has run the following reports on file: {{ filename }}
+        Processor: {{ processor }} has run the following reports:
 
-        {% for report_name, _ in reports %}
-         * {{ report_name }}: {{ pastebin_url }}
+        {% for _, report in reports %}
+         * {{report.{{report.upload_url}}{{ report_name }}: {{ pastebin_url }}
         {% endfor %}
-
-
-        ----
 
       reports:
         hotsos:

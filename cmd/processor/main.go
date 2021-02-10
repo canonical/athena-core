@@ -54,11 +54,13 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name, topic string,
+	if err := p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name, topic string,
 		reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber {
 		log.Infof("Subscribing: %s - to topic: %s", name, topic)
 		return processor.NewBaseSubscriber(fc, sf, name, topic, reports, cfg, dbConn)
-	})
+	}); err != nil {
+		panic(err)
+	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
