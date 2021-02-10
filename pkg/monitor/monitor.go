@@ -8,10 +8,9 @@ import (
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
 	"github.com/niedbalski/go-athena/pkg/common"
+	"github.com/niedbalski/go-athena/pkg/common/db"
 	"github.com/niedbalski/go-athena/pkg/config"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"path/filepath"
 	"regexp"
 	"sync"
 	"time"
@@ -55,26 +54,27 @@ func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]stri
 	return processors, nil
 }
 
-func (m *Monitor) GetLatestFiles(dirs []string, duration time.Duration) ([]common.File, error) {
+func (m *Monitor) GetLatestFiles(dirs []string, duration time.Duration) ([]db.File, error) {
 	files, err := m.FilesClient.GetFiles(dirs)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, file := range files {
-		m.Db.Where(common.File{Path: file.Path}).FirstOrCreate(&file)
+		m.Db.Where(db.File{Path: file.Path}).FirstOrCreate(&file)
 	}
 
 	m.Db.Where("created > ?", time.Now().Add(-duration)).Find(&files)
 	return files, nil
 }
 
-func (m *Monitor) GetMatchingProcessorByFile(files []common.File) (map[string][]common.File, error) {
+func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.File, error) {
 	var sfCase = &common.Case{}
-	var results = make(map[string][]common.File)
+	var results = make(map[string][]db.File)
 
 	for _, file := range files {
 		var processors []string
+
 		caseNumber, err := common.GetCaseNumberByFilename(file.Path)
 		if err == nil && caseNumber != "" {
 			sfCase, err = m.SalesforceClient.GetCaseByNumber(caseNumber)
@@ -101,46 +101,70 @@ func (m *Monitor) GetMatchingProcessorByFile(files []common.File) (map[string][]
 	return results, nil
 }
 
-func NewMonitor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider, cfg *config.Config, db *gorm.DB) (*Monitor, error) {
-	if db == nil {
-		var err error
-		log.Infof("Using database path: %s", cfg.Monitor.DBPath)
-		if _, err := os.Stat(cfg.Monitor.DBPath); os.IsNotExist(err) {
-			log.Infof("Database path: %s doesn't exists, creating", cfg.Monitor.DBPath)
-			if err = os.MkdirAll(cfg.Monitor.DBPath, 0755); err != nil {
-				return nil, err
-			}
-		}
-
-		if db, err = gorm.Open("sqlite3", filepath.Join(cfg.Monitor.DBPath, "main.db")); err != nil {
+func NewMonitor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider,
+	cfg *config.Config, dbConn *gorm.DB) (*Monitor, error) {
+	var err error
+	if dbConn == nil {
+		dbConn, err = db.GetDBConn(cfg)
+		if err != nil {
 			return nil, err
 		}
-		db.AutoMigrate(common.File{})
 	}
-	return &Monitor{Provider: provider, Db: db, FilesClient: filesClient, SalesforceClient: salesforceClient, Config: cfg, mu: new(sync.Mutex)}, nil
+
+	return &Monitor{
+		Provider:         provider,
+		Db:               dbConn,
+		FilesClient:      filesClient,
+		SalesforceClient: salesforceClient,
+		Config:           cfg, mu: new(sync.Mutex)}, nil
 }
 
-func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
+func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
+	filesDelta, err := time.ParseDuration(m.Config.Monitor.FilesDelta)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, filesDelta)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	processors, err := m.GetMatchingProcessorByFile(latestFiles)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("Found %d new files, %d to be processed", len(latestFiles), len(processors))
+	for processor, files := range processors {
+		for _, file := range files {
+			if file.Dispatched {
+				log.Infof("File %s already dispatched, skipping", file.Path)
+				continue
+			}
+			log.Infof("Sending file: %s to processor: %s", file.Path, processor)
+			publishResults := pubsub.PublishJSON(*ctx, processor, file)
+			if publishResults.Err != nil {
+				file.Dispatched = false
+				log.Errorf("Cannot dispatch file: %s to processor, error: %s", file.Path, err)
+			} else {
+				file.Dispatched = true
+				log.Debugf("file: %s -- flagged as dispatched", file.Path)
+			}
+			m.Db.Save(file)
+		}
+	}
+}
+func (m *Monitor) Run(ctx context.Context) error {
 
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
 		Provider:    m.Provider,
 		Middleware:  defaults.Middleware,
 	})
-
-	doEvery := func(ctx context.Context, d time.Duration, f func()) error {
-		ticker := time.Tick(d) // nolint:staticcheck
-		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-ticker:
-				m.mu.Lock()
-				f()
-				m.mu.Unlock()
-			}
-		}
-	}
 
 	if ctx == nil {
 		var cancel context.CancelFunc
@@ -153,41 +177,7 @@ func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
 		return err
 	}
 
-	_ = doEvery(ctx, pollEvery, func() {
-		latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, filesAgeDelta)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		processors, err := m.GetMatchingProcessorByFile(latestFiles)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		log.Infof("Found %d new files, %d to be processed", len(latestFiles), len(processors))
-		for processor, files := range processors {
-			for _, file := range files {
-				if file.Dispatched {
-					log.Infof("File %s already dispatched at: %s, skipping", file.Path, file.DispatchedAt)
-					continue
-				}
-				log.Infof("Sending file: %s to processor: %s", file.Path, processor)
-				publishResults := pubsub.PublishJSON(ctx, processor, file)
-				if publishResults.Err != nil {
-					file.Dispatched = false
-					log.Errorf("Cannot dispatch file: %s to processor, error: %s", file.Path, err)
-				} else {
-					file.Dispatched = true
-					file.DispatchedAt = time.Now()
-					log.Debugf("file: %s -- flagged as dispatched at : %s", file.Path, file.DispatchedAt)
-				}
-				m.Db.Save(file)
-			}
-		}
-	})
-
+	go common.RunOnInterval(ctx, m.mu, pollEvery, m.PollNewFiles)
 	<-ctx.Done()
 	return nil
 }

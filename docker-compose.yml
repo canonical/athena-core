@@ -16,6 +16,20 @@ services:
 #      - athena
 #    restart: always
 
+  db:
+    container_name: db
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: athena
+      MYSQL_USER: athena
+      MYSQL_PASSWORD: athena
+    networks:
+      - athena
+    ports:
+      - "3306:3306"
+
   athena-monitor:
     container_name: athena-monitor
     image: athena/athena-monitor-linux-amd64:main
@@ -24,6 +38,7 @@ services:
     command: /athena-monitor --log.level="debug"
     depends_on:
       - nats-streaming
+      - db
     networks:
       - athena
     restart: always
@@ -36,6 +51,7 @@ services:
     command: /athena-processor --config /etc/athena/main.yaml --log.level="debug"
     depends_on:
       - nats-streaming
+      - db
     networks:
       - athena
     restart: always

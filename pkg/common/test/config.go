@@ -1,27 +1,35 @@
 package test
 
 var DefaultTestConfig = `
+db:
+  dialect: mysql
+  dsn: "athena:athena@tcp(db:3306)/athena?charset=utf8&parseTime=true"
+
 monitor:
-  api-key: "xxx"
-  poll-every: 500ms
+  poll-every: 1s
+  files-delta: 1s 
   directories:
       - "/uploads"
-      - "/uploads/sosreport"
   processor-map:
     - type: filename
       regex: ".*sosreport.*.tar.xz$"
       processor: sosreports
 
 processor:
+  batch-comments-every: 1m
+  base-tmpdir: "/tmp/athena"
   subscribers:
     sosreports:
+      sf-comment-enabled: true
+      sf-comment-batch: 5m
+      sf-comment-public: false
       sf-comment: |
         Athena
 
-        Processor: {{ processor }} has run the following reports on file: {{ filename }}
+        Processor: {{ processor }} Subscriber: {{ subscriber }} has run the following reports:
 
-        {% for report_name, _ in reports %}
-         * {{ report_name }}: {{ pastebin_url }}
+        {% for report in reports %}
+          * {{ report.Name }}: https://files.support.canonical.com/files/{{report.UploadLocation}}
         {% endfor %}
 
       reports:
@@ -29,15 +37,14 @@ processor:
           exit-codes: 0 2 127 126
           script: |
             #!/bin/bash
-            exit 0
+            echo ${{filepath}} ${{basedir}} && exit 0
 
-pastebin:
+filescom:
   key: "xxx"
-  provider: "github"
+  endpoint: "https://app.files.com"
 
 salesforce:
   endpoint: "https://canonical--obiwan.my.salesforce.com/"
-  username: "xxx@canonical.com.obiwan"
-  password: "xxxx"
-  security-token: "xxxx"
-`
+  username: "xxx@xxx.com.xxx"
+  password: "xxx"
+  security-token: "xxx"`

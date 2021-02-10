@@ -21,9 +21,13 @@ type Subscriber struct {
 }
 
 type Config struct {
+	Db struct {
+		Dialect string `yaml:"dialect" default:"sqlite3"`
+		DSN     string `yaml:"dsn"`
+	} `yaml:"db,omitempty"`
 	Monitor struct {
-		DBPath       string   `yaml:"db-path" default:"."`
 		PollEvery    string   `yaml:"poll-every" default:"5"`
+		FilesDelta   string   `yaml:"files-delta" default:"10m"`
 		Filetypes    []string `yaml:"filetypes"`
 		Directories  []string `yaml:"directories"`
 		ProcessorMap []struct {
@@ -33,8 +37,9 @@ type Config struct {
 		} `yaml:"processor-map"`
 	} `yaml:"monitor,omitempty"`
 	Processor struct {
-		BaseTmpDir  string                `yaml:"base-tmpdir" default:""`
-		SubscribeTo map[string]Subscriber `yaml:"subscribers,omitempty"`
+		BatchCommentsEvery string                `yaml:"batch-comments-every" default:"10m"`
+		BaseTmpDir         string                `yaml:"base-tmpdir" default:""`
+		SubscribeTo        map[string]Subscriber `yaml:"subscribers,omitempty"`
 	} `yaml:"processor,omitempty"`
 	Salesforce struct {
 		Endpoint      string `yaml:"endpoint"`
@@ -42,11 +47,6 @@ type Config struct {
 		Password      string `yaml:"password"`
 		SecurityToken string `yaml:"security-token"`
 	} `yaml:"salesforce,omitempty"`
-	Pastebin struct {
-		Key      string `yaml:"key"`
-		Provider string `yaml:"provider"`
-	} `yaml:"pastebin,omitempty"`
-
 	FilesCom struct {
 		Key      string `yaml:"key"`
 		Endpoint string `yaml:"endpoint"`
