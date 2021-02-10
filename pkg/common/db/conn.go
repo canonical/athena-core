@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/go-orm/gorm"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/niedbalski/go-athena/pkg/config"
 )
 

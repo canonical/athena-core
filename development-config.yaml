@@ -1,5 +1,6 @@
 db:
-  dsn: "athena:athena@tcp(db:3306)/athena?charset=utf8"
+  dialect: mysql
+  dsn: "athena:athena@tcp(db:3306)/athena?charset=utf8&parseTime=true"
 
 monitor:
   poll-every: 10s
@@ -37,11 +38,11 @@ processor:
             echo ${{filepath}} ${{basedir}} && exit 0
 
 filescom:
-  key: "adc017510b7dec542da7494558d6567f42be0a8fa958497aef0b968738ab2035"
+  key: "xxx"
   endpoint: "https://app.files.com"
 
 salesforce:
   endpoint: "https://canonical--obiwan.my.salesforce.com/"
-  username: "jorge.niedbalski@canonical.com.obiwan"
-  password: "avocado4life"
-  security-token: "qi84gPBTXzee6sI7nlEnQXcWM"
+  username: "jorge.xxx@canonical.com.obiwan"
+  password: "xxx"
+  security-token: "xxx"

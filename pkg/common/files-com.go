@@ -26,9 +26,9 @@ type BaseFilesComClient struct {
 }
 
 func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*filessdk.File, error) {
-	logrus.Infof("creating new file on path: %s")
+	logrus.Infof("creating new file on path: %s", destinationPath)
 	data := strings.NewReader(contents)
-	fileEntry, err := client.ApiClient.Upload(data, destinationPath, nil)
+	fileEntry, err := client.ApiClient.Upload(data, destinationPath, &file.UploadProgress{})
 	if err != nil {
 		return nil, err
 	}

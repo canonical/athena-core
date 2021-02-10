@@ -84,58 +84,65 @@ func RunReport(report *ReportToExecute) ([]byte, error) {
 	return RunWithoutTimeout(report)
 }
 
-func (runner *ReportRunner) UploadAndSave(report *ReportToExecute, content string) error {
+const DefaultReportOutputFormat = "%s.athena-%s-report"
+
+func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content string) error {
 	var file db.File
 
 	filePath := report.File.Path
-	if result := runner.Db.Where("path = ?", filePath).First(&file); result.Error != nil {
-		return fmt.Errorf("cannot find a file with path: %s", filePath)
+
+	result := runner.Db.Where("path = ?", filePath).First(&file)
+	if result.Error != nil {
+		return fmt.Errorf("cannot find a file with path: %s on the database", filePath)
 	}
 
-	uploadedFilePath, err := runner.FilescomClient.Upload(content, filepath.Join(filePath, report.Name))
+	uploadedFilePath, err := runner.FilescomClient.Upload(content, fmt.Sprintf(DefaultReportOutputFormat, filePath, report.Name))
 	if err != nil {
 		return fmt.Errorf("cannot upload file: %s", filePath)
 	}
+
+	logrus.Debugf("Uploaded file: %s", uploadedFilePath.Path)
 
 	caseNumber, err := common.GetCaseNumberByFilename(filePath)
 	if err != nil || caseNumber == "" {
 		return fmt.Errorf("not found case number on filename: %s", filePath)
 	}
 
-	logrus.Infof("Getting case from salesforce for number: %s", caseNumber)
+	logrus.Infof("Getting case from salesforce number: %s", caseNumber)
 	sfCase, err := runner.SalesforceClient.GetCaseByNumber(caseNumber)
 	if err != nil {
 		return err
 	}
 
 	if r := runner.Db.Save(&db.Report{
-		CaseID: sfCase.Id, Commented: false, UploadLocation: uploadedFilePath.Path, Name: report.Name, FileID: file.ID}); r.Error != nil {
+		Created: time.Now(), CaseID: sfCase.Id, Commented: false, UploadLocation: uploadedFilePath.Path, Name: report.Name, FileID: file.ID}); r.Error != nil {
 		return err
 	}
 
-	logrus.Infof("saved report name: %s on path:%s - case id: %s", report.Name, uploadedFilePath.DownloadUri, sfCase.CaseNumber)
+	logrus.Infof("Saved report name: %s on path:%s - case id: %s", report.Name, uploadedFilePath.Path, sfCase.CaseNumber)
 	return nil
 }
 
-func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, error)) (map[string]string, error) {
-	var results = make(map[string]string)
-
+func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, error)) (error) {
 	for _, report := range runner.Reports {
 		var err error
 		var output []byte
 
+		logrus.Debugf("Running report: %s on file: %s", report.Name, report.File.Path)
 		output, err = reportFn(&report)
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
-		results[report.Name] = string(output)
-		if err := runner.UploadAndSave(&report, string(output)); err != nil {
+
+		logrus.Debugf("Uploading and saving report:%s for file: %s", report.Name, report.File.Path)
+		if err := runner.UploadAndSaveReport(&report, string(output)); err != nil {
 			logrus.Errorf("cannot upload and save report: %s - error: %s", report.Name, err)
 			continue
 		}
 	}
-	return results, nil
+
+	return nil
 }
 
 const DefaultExecutionTimeout = "5m"
@@ -152,7 +159,8 @@ func renderTemplate(ctx *pongo2.Context, data string) (string, error) {
 	return out, nil
 }
 
-func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceClient, fc common.FilesComClient, name string, file *db.File, reports map[string]config.Report) (*ReportRunner, error) {
+func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceClient, fc common.FilesComClient, name string,
+	file *db.File, reports map[string]config.Report) (*ReportRunner, error) {
 	var reportRunner ReportRunner
 	var command string
 
@@ -183,6 +191,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 	reportRunner.Basedir = dir
 	reportRunner.Db = dbConn
 	reportRunner.SalesforceClient = sf
+	reportRunner.FilescomClient = fc
 
 	//TODO: document the template variables
 	tplContext := pongo2.Context{
@@ -251,23 +260,12 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *db.File, msg *pubsub.M
 		msg.Ack()
 		return err
 	}
-
-	logrus.Infof("Running reports on file: %s", file.Path)
-	reports, err := runner.Run(RunReport)
-	if err != nil {
+	if err := runner.Run(RunReport); err != nil {
 		logrus.Error(err)
 		msg.Ack()
 		_ = runner.Clean()
 		return err
 	}
-
-	if len(reports) <= 0 {
-		logrus.Errorf("No reports to process, %d reports", len(reports))
-		msg.Ack()
-		_ = runner.Clean()
-		return nil
-	}
-
 	msg.Ack()
 	return runner.Clean()
 }
