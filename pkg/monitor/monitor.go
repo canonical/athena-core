@@ -169,7 +169,7 @@ func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
 		for processor, files := range processors {
 			for _, file := range files {
 				if file.Dispatched {
-					log.Infof("File %s already dispatched at: %s, skipping", file.Path, file.DispatchedAt)
+					log.Infof("File %s already dispatched, skipping", file.Path)
 					continue
 				}
 				log.Infof("Sending file: %s to processor: %s", file.Path, processor)
@@ -179,8 +179,7 @@ func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
 					log.Errorf("Cannot dispatch file: %s to processor, error: %s", file.Path, err)
 				} else {
 					file.Dispatched = true
-					file.DispatchedAt = time.Now()
-					log.Debugf("file: %s -- flagged as dispatched at : %s", file.Path, file.DispatchedAt)
+					log.Debugf("file: %s -- flagged as dispatched", file.Path)
 				}
 				m.Db.Save(file)
 			}
