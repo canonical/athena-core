@@ -119,27 +119,52 @@ func NewMonitor(filesClient common.FilesComClient, salesforceClient common.Sales
 		Config:           cfg, mu: new(sync.Mutex)}, nil
 }
 
-func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
+func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
+	filesDelta, err := time.ParseDuration(m.Config.Monitor.FilesDelta)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, filesDelta)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	processors, err := m.GetMatchingProcessorByFile(latestFiles)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infof("Found %d new files, %d to be processed", len(latestFiles), len(processors))
+	for processor, files := range processors {
+		for _, file := range files {
+			if file.Dispatched {
+				log.Infof("File %s already dispatched, skipping", file.Path)
+				continue
+			}
+			log.Infof("Sending file: %s to processor: %s", file.Path, processor)
+			publishResults := pubsub.PublishJSON(*ctx, processor, file)
+			if publishResults.Err != nil {
+				file.Dispatched = false
+				log.Errorf("Cannot dispatch file: %s to processor, error: %s", file.Path, err)
+			} else {
+				file.Dispatched = true
+				log.Debugf("file: %s -- flagged as dispatched", file.Path)
+			}
+			m.Db.Save(file)
+		}
+	}
+}
+func (m *Monitor) Run(ctx context.Context) error {
 
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
 		Provider:    m.Provider,
 		Middleware:  defaults.Middleware,
 	})
-
-	doEvery := func(ctx context.Context, d time.Duration, f func()) error {
-		ticker := time.Tick(d) // nolint:staticcheck
-		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-ticker:
-				m.mu.Lock()
-				f()
-				m.mu.Unlock()
-			}
-		}
-	}
 
 	if ctx == nil {
 		var cancel context.CancelFunc
@@ -152,40 +177,7 @@ func (m *Monitor) Run(ctx context.Context, filesAgeDelta time.Duration) error {
 		return err
 	}
 
-	_ = doEvery(ctx, pollEvery, func() {
-		latestFiles, err := m.GetLatestFiles(m.Config.Monitor.Directories, filesAgeDelta)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		processors, err := m.GetMatchingProcessorByFile(latestFiles)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		log.Infof("Found %d new files, %d to be processed", len(latestFiles), len(processors))
-		for processor, files := range processors {
-			for _, file := range files {
-				if file.Dispatched {
-					log.Infof("File %s already dispatched, skipping", file.Path)
-					continue
-				}
-				log.Infof("Sending file: %s to processor: %s", file.Path, processor)
-				publishResults := pubsub.PublishJSON(ctx, processor, file)
-				if publishResults.Err != nil {
-					file.Dispatched = false
-					log.Errorf("Cannot dispatch file: %s to processor, error: %s", file.Path, err)
-				} else {
-					file.Dispatched = true
-					log.Debugf("file: %s -- flagged as dispatched", file.Path)
-				}
-				m.Db.Save(file)
-			}
-		}
-	})
-
+	go common.RunOnInterval(ctx, m.mu, pollEvery, m.PollNewFiles)
 	<-ctx.Done()
 	return nil
 }

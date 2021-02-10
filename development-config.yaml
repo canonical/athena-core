@@ -4,6 +4,7 @@ db:
 
 monitor:
   poll-every: 10s
+  files-delta: 10m
   directories:
       - "/uploads"
   processor-map:
@@ -12,20 +13,19 @@ monitor:
       processor: sosreports
 
 processor:
-  batch-comments-every: 1m
+  batch-comments-every: 5m
   base-tmpdir: "/tmp/athena"
   subscribers:
     sosreports:
       sf-comment-enabled: true
-      sf-comment-batch: 5m
       sf-comment-public: false
       sf-comment: |
         Athena
 
-        Processor: {{ processor }} has run the following reports:
+        Processor: {{ processor }} Subscriber: {{ subscriber }} has run the following reports:
 
-        {% for _, report in reports %}
-         * {{report.{{report.upload_url}}{{ report_name }}: {{ pastebin_url }}
+        {% for report in reports %}
+          * {{ report.Name }}: https://files.support.canonical.com/files/{{report.UploadLocation}}
         {% endfor %}
 
       reports:
@@ -34,13 +34,18 @@ processor:
           script: |
             #!/bin/bash
             echo ${{filepath}} ${{basedir}} && exit 0
+        foobar:
+          exit-codes: 0
+          script: |
+            #!/bin/bash
+            echo "foobar" && exit 0
 
 filescom:
-  key: "adc017510b7dec542da7494558d6567f42be0a8fa958497aef0b968738ab2035"
+  key: "xxx"
   endpoint: "https://app.files.com"
 
 salesforce:
-  endpoint: "https://canonical--obiwan.my.salesforce.com/"
-  username: "jorge.niedbalski@canonical.com.obiwan"
-  password: "avocado4life"
-  security-token: "qi84gPBTXzee6sI7nlEnQXcWM"
+  endpoint: "https://xxx--xxx.my.salesforce.com/"
+  username: "xxx.xxx@xxx.com.xxx"
+  password: "xxx"
+  security-token: "xxx"

@@ -27,6 +27,7 @@ type Config struct {
 	} `yaml:"db,omitempty"`
 	Monitor struct {
 		PollEvery    string   `yaml:"poll-every" default:"5"`
+		FilesDelta   string   `yaml:"files-delta" default:"10m"`
 		Filetypes    []string `yaml:"filetypes"`
 		Directories  []string `yaml:"directories"`
 		ProcessorMap []struct {
@@ -36,9 +37,9 @@ type Config struct {
 		} `yaml:"processor-map"`
 	} `yaml:"monitor,omitempty"`
 	Processor struct {
-		BatchCommentsEvery string `yaml:"batch-comments-every" default:"10m"`
-		BaseTmpDir  string                `yaml:"base-tmpdir" default:""`
-		SubscribeTo map[string]Subscriber `yaml:"subscribers,omitempty"`
+		BatchCommentsEvery string                `yaml:"batch-comments-every" default:"10m"`
+		BaseTmpDir         string                `yaml:"base-tmpdir" default:""`
+		SubscribeTo        map[string]Subscriber `yaml:"subscribers,omitempty"`
 	} `yaml:"processor,omitempty"`
 	Salesforce struct {
 		Endpoint      string `yaml:"endpoint"`

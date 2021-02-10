@@ -53,7 +53,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if err = m.Run(ctx, common.DefaultFilesAgeDelta); err != nil {
+	if err = m.Run(ctx); err != nil {
 		panic(err)
 	}
 	c := make(chan os.Signal, 1)

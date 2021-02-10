@@ -8,10 +8,10 @@ import (
 type File struct {
 	gorm.Model
 
-	Created      time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
-	Dispatched   bool   `gorm:"default:false"`
-	Path         string `gorm:"primary_key"`
-	Reports      []Report
+	Created    time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
+	Dispatched bool      `gorm:"default:false"`
+	Path       string    `gorm:"primary_key"`
+	Reports    []Report
 }
 
 type Report struct {
@@ -20,6 +20,7 @@ type Report struct {
 	Created        time.Time `gorm:"autoCreateTime"`
 	Commented      bool      `gorm:"default:false"`
 	UploadLocation string
+	Subscriber     string
 	Name           string
 	FileID         uint
 	CaseID         string

@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -35,6 +36,7 @@ type BaseSubscriber struct {
 	SalesforceClient common.SalesforceClient
 	FilesComClient   common.FilesComClient
 	Config           *config.Config
+	Name             string
 }
 
 func (s *BaseSubscriber) Setup(c *pubsub.Client) {
@@ -42,18 +44,18 @@ func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 }
 
 type ReportToExecute struct {
-	Name, Command, BaseDir, ExitCodes string
-	File                              *db.File
-	Timeout                           time.Duration
-	Output                            []byte
+	Name, Command, BaseDir, ExitCodes, Subscriber string
+	File                                          *db.File
+	Timeout                                       time.Duration
+	Output                                        []byte
 }
 
 type ReportRunner struct {
-	Reports          []ReportToExecute
-	SalesforceClient common.SalesforceClient
-	FilescomClient   common.FilesComClient
-	Name, Basedir    string
-	Db               *gorm.DB
+	Reports                   []ReportToExecute
+	SalesforceClient          common.SalesforceClient
+	FilescomClient            common.FilesComClient
+	Name, Subscriber, Basedir string
+	Db                        *gorm.DB
 }
 
 func RunWithTimeout(report *ReportToExecute) ([]byte, error) {
@@ -88,9 +90,7 @@ const DefaultReportOutputFormat = "%s.athena-%s-report"
 
 func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content string) error {
 	var file db.File
-
 	filePath := report.File.Path
-
 	result := runner.Db.Where("path = ?", filePath).First(&file)
 	if result.Error != nil {
 		return fmt.Errorf("cannot find a file with path: %s on the database", filePath)
@@ -101,8 +101,7 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content
 		return fmt.Errorf("cannot upload file: %s", filePath)
 	}
 
-	logrus.Debugf("Uploaded file: %s", uploadedFilePath.Path)
-
+	logrus.Debugf("Uploaded file: %s", uploadedFilePath.DownloadUri)
 	caseNumber, err := common.GetCaseNumberByFilename(filePath)
 	if err != nil || caseNumber == "" {
 		return fmt.Errorf("not found case number on filename: %s", filePath)
@@ -115,7 +114,7 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content
 	}
 
 	if r := runner.Db.Save(&db.Report{
-		Created: time.Now(), CaseID: sfCase.Id, Commented: false, UploadLocation: uploadedFilePath.Path, Name: report.Name, FileID: file.ID}); r.Error != nil {
+		Created: time.Now(), CaseID: sfCase.Id, Commented: false, UploadLocation: uploadedFilePath.Path, Name: report.Name, FileID: file.ID, Subscriber: report.Subscriber}); r.Error != nil {
 		return err
 	}
 
@@ -123,7 +122,7 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content
 	return nil
 }
 
-func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, error)) (error) {
+func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, error)) error {
 	for _, report := range runner.Reports {
 		var err error
 		var output []byte
@@ -159,8 +158,9 @@ func renderTemplate(ctx *pongo2.Context, data string) (string, error) {
 	return out, nil
 }
 
-func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceClient, fc common.FilesComClient, name string,
+func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceClient, fc common.FilesComClient, subscriber, name string,
 	file *db.File, reports map[string]config.Report) (*ReportRunner, error) {
+
 	var reportRunner ReportRunner
 	var command string
 
@@ -187,6 +187,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		return nil, err
 	}
 
+	reportRunner.Subscriber = subscriber
 	reportRunner.Name = name
 	reportRunner.Basedir = dir
 	reportRunner.Db = dbConn
@@ -240,6 +241,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		reportToExecute.Command = command
 		reportToExecute.BaseDir = reportRunner.Basedir
 		reportToExecute.ExitCodes = report.ExitCodes
+		reportToExecute.Subscriber = reportRunner.Subscriber
 		reportToExecute.Name = name
 		reportToExecute.File = file
 		reportRunner.Reports = append(reportRunner.Reports, reportToExecute)
@@ -254,7 +256,7 @@ func (runner *ReportRunner) Clean() error {
 }
 
 func (s *BaseSubscriber) Handler(_ context.Context, file *db.File, msg *pubsub.Msg) error {
-	runner, err := NewReportRunner(s.Config, s.Db, s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
+	runner, err := NewReportRunner(s.Config, s.Db, s.SalesforceClient, s.FilesComClient, s.Name, s.Options.Topic, file, s.Reports)
 	if err != nil {
 		logrus.Error(err)
 		msg.Ack()
@@ -286,6 +288,7 @@ func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient commo
 	subscriber.SalesforceClient = salesforceClient
 	subscriber.Options.Handler = subscriber.Handler
 	subscriber.Config = cfg
+	subscriber.Name = topic
 	subscriber.Db = dbConn
 	return &subscriber
 }
@@ -326,6 +329,86 @@ func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
 	return results
 }
 
+var reportMap map[string]map[string]map[string][]db.Report
+
+func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.Duration) {
+	var reports []db.Report
+	if reportMap == nil {
+		reportMap = make(map[string]map[string]map[string][]db.Report)
+	}
+
+	logrus.Infof("Running process to send batched comments to salesforce every %s", interval)
+	if results := p.Db.Where("created <= ? and commented = ?", time.Now().Add(-interval), false).Find(&reports); results.Error != nil {
+		logrus.Error(results.Error)
+		return
+	}
+
+	if len(reports) <= 0 {
+		logrus.Errorf("Not found reports to be processed, skipping")
+		return
+	}
+
+	logrus.Infof("Found %d reports to be sent to salesforce", len(reports))
+	for _, report := range reports {
+		if reportMap[report.Subscriber] == nil {
+			reportMap[report.Subscriber] = make(map[string]map[string][]db.Report)
+		}
+		if reportMap[report.Subscriber][report.CaseID] == nil {
+			reportMap[report.Subscriber][report.CaseID] = make(map[string][]db.Report)
+		}
+
+		if reportMap[report.Subscriber][report.CaseID][report.Name] == nil {
+			reportMap[report.Subscriber][report.CaseID][report.Name] = make([]db.Report, 0)
+		}
+
+		reportMap[report.Subscriber][report.CaseID][report.Name] = append(reportMap[report.Subscriber][report.CaseID][report.Name], report)
+	}
+
+	for subscriberName, caseMap := range reportMap {
+		for caseId, reportsByType := range caseMap {
+			for _, reports := range reportsByType {
+				var tplContext pongo2.Context
+				subscriber, ok := p.Config.Processor.SubscribeTo[subscriberName]
+				if !ok {
+					logrus.Errorf("Not found subscriber for: %s", subscriberName)
+					continue
+				}
+
+				if !subscriber.SFCommentEnabled {
+					logrus.Warnf("Salesforce comments have been disabled, skipping comments")
+					continue
+				}
+
+				//TODO: document variables
+				tplContext = pongo2.Context{
+					"processor":  p.Hostname,
+					"subscriber": subscriberName,
+					"reports":    reports,
+				}
+
+				renderedComment, err := renderTemplate(&tplContext, subscriber.SFComment)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
+
+				comment := p.SalesforceClient.PostComment(caseId, renderedComment, subscriber.SFCommentIsPublic)
+				if comment == nil {
+					logrus.Errorf("Cannot post comment to case id: %s", caseId)
+					continue
+				}
+
+				logrus.Infof("Posted comment on case id: %s, %d reports", caseId, len(reports))
+				for _, report := range reports {
+					report.Commented = true
+					p.Db.Save(report)
+				}
+				reportMap = nil
+			}
+		}
+	}
+}
+
 func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient common.FilesComClient,
 	salesforceClient common.SalesforceClient, name, topic string, reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber) error {
 
@@ -345,83 +428,12 @@ func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient co
 		go pubsub.Subscribe(newSubscriberFn(p.FilesClient, p.SalesforceClient, p.Hostname, event, p.getReportsByTopic(event), p.Config, p.Db))
 	}
 
-
-	runOnInterval := func(ctx context.Context, d time.Duration, f func())  {
-		ticker := time.Tick(d) // nolint:staticcheck
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker:
-				f()
-			}
-		}
-	}
-
-
 	interval, err := time.ParseDuration(p.Config.Processor.BatchCommentsEvery)
 	if err != nil {
 		return err
 	}
 
-	var reportMap map[string]map[string][]db.Report
-
-	go runOnInterval(ctx, interval, func() {
-		var reports []db.Report
-
-		logrus.Info("Running process to send batched comments to salesforce on interval %s", interval)
-
-		if results := p.Db.Where("created >= ? and commented = ?", time.Now().Add(-interval), false).Find(&reports); results.Error != nil {
-			logrus.Error(results.Error)
-			return
-		}
-
-		if len(reports) <= 0 {
-			logrus.Errorf("Not found reports to be processed, skipping")
-			return
-		}
-
-
-		for _, report := range reports {
-			reportMap[report.CaseID][report.Name] = append(reportMap[report.Name][report.CaseID], report)
-		}
-
-		for caseId, reportsByType := range reportMap {
-			for reportName, reports := range reportsByType {
-				var tplContext pongo2.Context
-
-				subscriber, ok := p.Config.Processor.SubscribeTo[reportName]
-				if !ok {
-					logrus.Errorf("Not found subscriber for: %s", reportName)
-					continue
-				}
-
-				if !subscriber.SFCommentEnabled {
-					logrus.Warnf("Salesforce comments have been disabled, skipping comments")
-					continue
-				}
-
-				//TODO: document variables
-				tplContext = pongo2.Context{
-					"processor": p.Hostname,
-					"reports": reports,
-				}
-
-				renderedComment, err := renderTemplate(&tplContext, subscriber.SFComment)
-				if err != nil {
-					logrus.Error(err)
-					continue
-				}
-
-				comment := p.SalesforceClient.PostComment(caseId, renderedComment, subscriber.SFCommentIsPublic)
-				if comment == nil {
-					   logrus.Errorf("Cannot post comment to case id: %s", caseId)
-					   continue
-				}
-				logrus.Infof("Posted comment on case id: %s", caseId)
-			}
-		}
-	})
+	go common.RunOnInterval(ctx, &sync.Mutex{}, interval, p.BatchSalesforceComments)
 
 	<-ctx.Done()
 	return nil
