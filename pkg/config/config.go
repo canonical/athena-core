@@ -21,8 +21,11 @@ type Subscriber struct {
 }
 
 type Config struct {
+	Db struct {
+		Dialect string `yaml:"dialect" default:"sqlite3"`
+		DSN     string `yaml:"dsn"`
+	} `yaml:"db,omitempty"`
 	Monitor struct {
-		DBPath       string   `yaml:"db-path" default:"."`
 		PollEvery    string   `yaml:"poll-every" default:"5"`
 		Filetypes    []string `yaml:"filetypes"`
 		Directories  []string `yaml:"directories"`
@@ -42,11 +45,6 @@ type Config struct {
 		Password      string `yaml:"password"`
 		SecurityToken string `yaml:"security-token"`
 	} `yaml:"salesforce,omitempty"`
-	Pastebin struct {
-		Key      string `yaml:"key"`
-		Provider string `yaml:"provider"`
-	} `yaml:"pastebin,omitempty"`
-
 	FilesCom struct {
 		Key      string `yaml:"key"`
 		Endpoint string `yaml:"endpoint"`

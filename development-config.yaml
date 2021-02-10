@@ -1,5 +1,7 @@
+db:
+  dsn: "athena:athena@tcp(db:3306)/athena?charset=utf8"
+
 monitor:
-  db-path: "/tmp/athena"
   poll-every: 10s
   directories:
       - "/uploads"
@@ -13,6 +15,7 @@ processor:
   subscribers:
     sosreports:
       sf-comment-enabled: true
+      sf-comment-batch: 5m
       sf-comment-public: false
       sf-comment: |
         Athena
@@ -34,15 +37,11 @@ processor:
             echo ${{filepath}} ${{basedir}} && exit 0
 
 filescom:
-  key: "xxx"
+  key: "adc017510b7dec542da7494558d6567f42be0a8fa958497aef0b968738ab2035"
   endpoint: "https://app.files.com"
 
-pastebin:
-  key: "xxx"
-  provider: "github"
-
 salesforce:
-  endpoint: "https://xxx.my.salesforce.com/"
-  username: "xxx@xxx.com.xxx"
-  password: "xxx"
-  security-token: "xxx"
+  endpoint: "https://canonical--obiwan.my.salesforce.com/"
+  username: "jorge.niedbalski@canonical.com.obiwan"
+  password: "avocado4life"
+  security-token: "qi84gPBTXzee6sI7nlEnQXcWM"

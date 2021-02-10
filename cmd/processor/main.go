@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/go-orm/gorm"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/providers/nats"
 	"github.com/nats-io/stan.go"
@@ -41,27 +42,22 @@ func main() {
 		panic(err)
 	}
 
-	pbClient, err := common.NewPastebinClient(cfg)
-	if err != nil {
-		panic(err)
-	}
-
 	natsClient, err := nats.NewNats("test-cluster", stan.NatsURL(*natsUrl))
 	if err != nil {
 		panic(err)
 	}
 
-	p, err := processor.NewProcessor(filesClient, sfClient, pbClient, natsClient, cfg)
+	p, err := processor.NewProcessor(filesClient, sfClient, natsClient, cfg, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, pb common.PastebinClient, name, topic string,
-		reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber {
+	go p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name, topic string,
+		reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber {
 		log.Infof("Subscribing: %s - to topic: %s", name, topic)
-		return processor.NewBaseSubscriber(fc, sf, pb, name, topic, reports, cfg)
+		return processor.NewBaseSubscriber(fc, sf, name, topic, reports, cfg, dbConn)
 	})
 
 	c := make(chan os.Signal, 1)

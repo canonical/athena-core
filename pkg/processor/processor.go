@@ -2,10 +2,13 @@ package processor
 
 import (
 	"context"
+	"fmt"
 	"github.com/flosch/pongo2/v4"
+	"github.com/go-orm/gorm"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
 	"github.com/niedbalski/go-athena/pkg/common"
+	"github.com/niedbalski/go-athena/pkg/common/db"
 	"github.com/niedbalski/go-athena/pkg/config"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -17,20 +20,20 @@ import (
 )
 
 type Processor struct {
+	Db               *gorm.DB
 	Config           *config.Config
 	FilesClient      common.FilesComClient
 	SalesforceClient common.SalesforceClient
-	PastebinClient   common.PastebinClient
 	Provider         pubsub.Provider
 	Hostname         string
 }
 
 type BaseSubscriber struct {
+	Db               *gorm.DB
 	Options          pubsub.HandlerOptions
 	Reports          map[string]config.Report
 	SalesforceClient common.SalesforceClient
 	FilesComClient   common.FilesComClient
-	PastebinClient   common.PastebinClient
 	Config           *config.Config
 }
 
@@ -40,14 +43,17 @@ func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 
 type ReportToExecute struct {
 	Name, Command, BaseDir, ExitCodes string
-	File                              *common.File
+	File                              *db.File
 	Timeout                           time.Duration
 	Output                            []byte
 }
 
 type ReportRunner struct {
-	Reports       []ReportToExecute
-	Name, Basedir string
+	Reports          []ReportToExecute
+	SalesforceClient common.SalesforceClient
+	FilescomClient   common.FilesComClient
+	Name, Basedir    string
+	Db               *gorm.DB
 }
 
 func RunWithTimeout(report *ReportToExecute) ([]byte, error) {
@@ -68,7 +74,6 @@ func RunWithTimeout(report *ReportToExecute) ([]byte, error) {
 func RunWithoutTimeout(report *ReportToExecute) ([]byte, error) {
 	cmd := exec.Command("bash", "-c", report.Command)
 	cmd.Dir = report.BaseDir
-	//cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: task.Pgid}
 	return cmd.CombinedOutput()
 }
 
@@ -79,22 +84,61 @@ func RunReport(report *ReportToExecute) ([]byte, error) {
 	return RunWithoutTimeout(report)
 }
 
+func (runner *ReportRunner) UploadAndSave(report *ReportToExecute, content string) error {
+	var file db.File
+
+	filePath := report.File.Path
+	if result := runner.Db.Where("path = ?", filePath).First(&file); result.Error != nil {
+		return fmt.Errorf("cannot find a file with path: %s", filePath)
+	}
+
+	uploadedFilePath, err := runner.FilescomClient.Upload(content, filepath.Join(filePath, report.Name))
+	if err != nil {
+		return fmt.Errorf("cannot upload file: %s", filePath)
+	}
+
+	caseNumber, err := common.GetCaseNumberByFilename(filePath)
+	if err != nil || caseNumber == "" {
+		return fmt.Errorf("not found case number on filename: %s", filePath)
+	}
+
+	logrus.Infof("Getting case from salesforce for number: %s", caseNumber)
+	sfCase, err := runner.SalesforceClient.GetCaseByNumber(caseNumber)
+	if err != nil {
+		return err
+	}
+
+	if r := runner.Db.Save(&db.Report{
+		CaseID: sfCase.Id, Commented: false, UploadLocation: uploadedFilePath.Path, Name: report.Name, FileID: file.ID}); r.Error != nil {
+		return err
+	}
+
+	logrus.Infof("saved report name: %s on path:%s - case id: %s", report.Name, uploadedFilePath.DownloadUri, sfCase.CaseNumber)
+	return nil
+}
+
 func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, error)) (map[string]string, error) {
 	var results = make(map[string]string)
+
 	for _, report := range runner.Reports {
 		var err error
 		var output []byte
+
 		output, err = reportFn(&report)
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
 		results[report.Name] = string(output)
+		if err := runner.UploadAndSave(&report, string(output)); err != nil {
+			logrus.Errorf("cannot upload and save report: %s - error: %s", report.Name, err)
+			continue
+		}
 	}
 	return results, nil
 }
 
-const DefaultExecutionTimeout = "2m"
+const DefaultExecutionTimeout = "5m"
 
 func renderTemplate(ctx *pongo2.Context, data string) (string, error) {
 	tpl, err := pongo2.FromString(data)
@@ -108,7 +152,7 @@ func renderTemplate(ctx *pongo2.Context, data string) (string, error) {
 	return out, nil
 }
 
-func NewReportRunner(cfg *config.Config, sf common.SalesforceClient, fc common.FilesComClient, name string, file *common.File, reports map[string]config.Report) (*ReportRunner, error) {
+func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceClient, fc common.FilesComClient, name string, file *db.File, reports map[string]config.Report) (*ReportRunner, error) {
 	var reportRunner ReportRunner
 	var command string
 
@@ -137,6 +181,8 @@ func NewReportRunner(cfg *config.Config, sf common.SalesforceClient, fc common.F
 
 	reportRunner.Name = name
 	reportRunner.Basedir = dir
+	reportRunner.Db = dbConn
+	reportRunner.SalesforceClient = sf
 
 	//TODO: document the template variables
 	tplContext := pongo2.Context{
@@ -193,13 +239,13 @@ func NewReportRunner(cfg *config.Config, sf common.SalesforceClient, fc common.F
 	return &reportRunner, nil
 }
 
-func (r *ReportRunner) Clean() error {
-	logrus.Infof("Removing base directory: %s for report: %s", r.Basedir, r.Name)
-	return os.RemoveAll(r.Basedir)
+func (runner *ReportRunner) Clean() error {
+	logrus.Infof("Removing base directory: %s for report: %s", runner.Basedir, runner.Name)
+	return os.RemoveAll(runner.Basedir)
 }
 
-func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubsub.Msg) error {
-	runner, err := NewReportRunner(s.Config, s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
+func (s *BaseSubscriber) Handler(_ context.Context, file *db.File, msg *pubsub.Msg) error {
+	runner, err := NewReportRunner(s.Config, s.Db, s.SalesforceClient, s.FilesComClient, s.Options.Topic, file, s.Reports)
 	if err != nil {
 		logrus.Error(err)
 		msg.Ack()
@@ -209,6 +255,7 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubs
 	logrus.Infof("Running reports on file: %s", file.Path)
 	reports, err := runner.Run(RunReport)
 	if err != nil {
+		logrus.Error(err)
 		msg.Ack()
 		_ = runner.Clean()
 		return err
@@ -221,67 +268,14 @@ func (s *BaseSubscriber) Handler(_ context.Context, file *common.File, msg *pubs
 		return nil
 	}
 
-	logrus.Infof("Running pastebin for: %d reports", len(reports))
-	url, err := s.PastebinClient.Paste(reports, &common.PastebinOptions{Public: false})
-	if err != nil {
-		msg.Ack()
-		_ = runner.Clean()
-		return err
-	}
-
-	var tplContext pongo2.Context
-
-	//TODO: move this into a function
-	for event_name, event := range s.Config.Processor.SubscribeTo {
-		if event_name != s.Options.Topic {
-			continue
-		}
-		//TODO: document the template variables
-		tplContext = pongo2.Context{
-			"processor":    s.Options.Name,
-			"filename":     file.Path,
-			"pastebin_url": url,
-			"reports":      reports,
-		}
-		caseNumber, err := common.GetCaseNumberByFilename(file.Path)
-		if err != nil || caseNumber == "" {
-			logrus.Errorf("Not found case number on filename: %s", file.Path)
-			continue
-		}
-
-		logrus.Infof("Getting case from salesforce for number: %s", caseNumber)
-		sfCase, err := s.SalesforceClient.GetCaseByNumber(caseNumber)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		renderedComment, err := renderTemplate(&tplContext, event.SFComment)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-
-		if !event.SFCommentEnabled {
-			logrus.Warnf("Salesforce comments have been disabled, skipping case comment (id: %s)", caseNumber)
-			continue
-		}
-
-		logrus.Debugf("Posting case comment (id: %s), body: %s", caseNumber, renderedComment)
-		comment := s.SalesforceClient.PostComment(sfCase.Id, renderedComment, event.SFCommentIsPublic)
-		if comment == nil {
-			logrus.Errorf("Cannot post comment to case id: %s", sfCase.Id)
-			continue
-		}
-		logrus.Infof("Posted comment on case id: %s", caseNumber)
-	}
-
 	msg.Ack()
 	return runner.Clean()
 }
 
 const defaultHandlerDeadline = 10 * time.Minute
 
-func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, pastebinClient common.PastebinClient, name, topic string, reports map[string]config.Report, cfg *config.Config) *BaseSubscriber {
+func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient,
+	name, topic string, reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) *BaseSubscriber {
 	var subscriber = BaseSubscriber{Options: pubsub.HandlerOptions{
 		Topic:    topic,
 		Name:     "athena-processor-" + name,
@@ -292,20 +286,34 @@ func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient commo
 
 	subscriber.FilesComClient = filesClient
 	subscriber.SalesforceClient = salesforceClient
-	subscriber.PastebinClient = pastebinClient
 	subscriber.Options.Handler = subscriber.Handler
 	subscriber.Config = cfg
+	subscriber.Db = dbConn
 	return &subscriber
 }
 
-func NewProcessor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, pastebinClient common.PastebinClient,
-	provider pubsub.Provider, cfg *config.Config) (*Processor, error) {
+func NewProcessor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient,
+	provider pubsub.Provider, cfg *config.Config, dbConn *gorm.DB) (*Processor, error) {
+	var err error
+	if dbConn == nil {
+		dbConn, err = db.GetDBConn(cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Processor{Hostname: hostname, Provider: provider, FilesClient: filesClient, SalesforceClient: salesforceClient, PastebinClient: pastebinClient, Config: cfg}, nil
+	return &Processor{
+		Hostname:         hostname,
+		Provider:         provider,
+		FilesClient:      filesClient,
+		SalesforceClient: salesforceClient,
+		Db:               dbConn,
+		Config:           cfg}, nil
 }
 
 func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
@@ -321,8 +329,7 @@ func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
 }
 
 func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient common.FilesComClient,
-	salesforceClient common.SalesforceClient, pb common.PastebinClient,
-	name, topic string, reports map[string]config.Report, cfg *config.Config) pubsub.Subscriber) {
+	salesforceClient common.SalesforceClient, name, topic string, reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber) {
 
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
@@ -331,8 +338,7 @@ func (p *Processor) Run(ctx context.Context, newSubscriberFn func(filesClient co
 	})
 
 	for event := range p.Config.Processor.SubscribeTo {
-		go pubsub.Subscribe(newSubscriberFn(p.FilesClient, p.SalesforceClient, p.PastebinClient,
-			p.Hostname, event, p.getReportsByTopic(event), p.Config))
+		go pubsub.Subscribe(newSubscriberFn(p.FilesClient, p.SalesforceClient, p.Hostname, event, p.getReportsByTopic(event), p.Config, p.Db))
 	}
 
 	<-ctx.Done()
