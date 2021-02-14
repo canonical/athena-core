@@ -7,7 +7,7 @@ db:
 
 monitor:
   poll-every: 1s
-  files-delta: 1s 
+  files-delta: 1s
   directories:
       - "/uploads"
   processor-map:
@@ -44,7 +44,7 @@ filescom:
   endpoint: "https://app.files.com"
 
 salesforce:
-  endpoint: "https://canonical--obiwan.my.salesforce.com/"
+  endpoint: "https://xxx--xxxx.my.salesforce.com/"
   username: "xxx@xxx.com.xxx"
   password: "xxx"
   security-token: "xxx"`

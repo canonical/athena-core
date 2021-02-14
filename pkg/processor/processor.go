@@ -51,6 +51,7 @@ type ReportToExecute struct {
 }
 
 type ReportRunner struct {
+	Config                    *config.Config
 	Reports                   []ReportToExecute
 	SalesforceClient          common.SalesforceClient
 	FilescomClient            common.FilesComClient
@@ -96,7 +97,15 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content
 		return fmt.Errorf("cannot find a file with path: %s on the database", filePath)
 	}
 
-	uploadedFilePath, err := runner.FilescomClient.Upload(content, fmt.Sprintf(DefaultReportOutputFormat, filePath, report.Name))
+	var uploadPath string
+
+	if runner.Config.Processor.ReportsUploadPath == "" {
+		uploadPath = filePath
+	} else {
+		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, filepath.Base(filePath))
+	}
+
+	uploadedFilePath, err := runner.FilescomClient.Upload(content, fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name))
 	if err != nil {
 		return fmt.Errorf("cannot upload file: %s", filePath)
 	}
@@ -187,6 +196,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		return nil, err
 	}
 
+	reportRunner.Config = cfg
 	reportRunner.Subscriber = subscriber
 	reportRunner.Name = name
 	reportRunner.Basedir = dir
