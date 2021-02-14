@@ -37,6 +37,7 @@ type Config struct {
 		} `yaml:"processor-map"`
 	} `yaml:"monitor,omitempty"`
 	Processor struct {
+		ReportsUploadPath  string                `yaml:"reports-upload-dir" default:"/customers/athena-reports/"`
 		BatchCommentsEvery string                `yaml:"batch-comments-every" default:"10m"`
 		BaseTmpDir         string                `yaml:"base-tmpdir" default:""`
 		SubscribeTo        map[string]Subscriber `yaml:"subscribers,omitempty"`

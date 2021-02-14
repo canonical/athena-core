@@ -14,6 +14,7 @@ monitor:
 
 processor:
   batch-comments-every: 5m
+  reports-upload-dir: "/customers/athena-reports/"
   base-tmpdir: "/tmp/athena"
   subscribers:
     sosreports:
@@ -46,6 +47,6 @@ filescom:
 
 salesforce:
   endpoint: "https://xxx--xxx.my.salesforce.com/"
-  username: "xxx.xxx@xxx.com.xxx"
+  username: "xxx.xxx@xxxx"
   password: "xxx"
   security-token: "xxx"
