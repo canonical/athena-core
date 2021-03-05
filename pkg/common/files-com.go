@@ -60,9 +60,12 @@ func (client *BaseFilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 			if it.Folder().Type == "directory" {
 				continue
 			}
+			logrus.Debugf("Found file with path: %s", filePath)
 			files = append(files, db.File{Created: time.Now(), Path: filePath})
 		}
 	}
+	
+	logrus.Infof("Found %d files on the target directories", len(files))
 	return files, nil
 }
 
