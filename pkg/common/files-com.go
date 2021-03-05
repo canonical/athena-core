@@ -64,7 +64,6 @@ func (client *BaseFilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 			files = append(files, db.File{Created: time.Now(), Path: filePath})
 		}
 	}
-	
 	logrus.Infof("Found %d files on the target directories", len(files))
 	return files, nil
 }
