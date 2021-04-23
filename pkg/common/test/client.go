@@ -2,8 +2,8 @@ package test
 
 import (
 	files_sdk "github.com/Files-com/files-sdk-go"
-	"github.com/niedbalski/go-athena/pkg/common"
-	"github.com/niedbalski/go-athena/pkg/common/db"
+	"github.com/project-athena/athena-core/pkg/common"
+	"github.com/project-athena/athena-core/pkg/common/db"
 	"time"
 )
 

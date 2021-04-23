@@ -13,7 +13,7 @@ monitor:
       processor: sosreports
 
 processor:
-  batch-comments-every: 5m
+  batch-comments-every: 10s
   reports-upload-dir: "/customers/athena-reports/"
   base-tmpdir: "/tmp/athena"
   subscribers:
@@ -21,25 +21,49 @@ processor:
       sf-comment-enabled: true
       sf-comment-public: false
       sf-comment: |
-        Athena
-
-        Processor: {{ processor }} Subscriber: {{ subscriber }} has run the following reports:
-
-        {% for report in reports %}
-          * {{ report.Name }}: https://files.support.canonical.com/files/{{report.UploadLocation}}
-        {% endfor %}
+        Athena processor: {{ processor }} subscriber: {{ subscriber }} has run the following reports.
+        {% for report in reports -%}
+          {% for script in report.Scripts -%}
+            {% if script.Name == "hotsos-short" %}
+              {% if script.Output != "" %}
+        Summary for report: {{ report.Name }} - filepath: {{ report.FilePath }}
+        -------------------------------------------------------------------------
+        {{ script.Output }}
+              {% endif %}
+            {% endif %}
+          {%- endfor -%}
+        {%- endfor -%}
+        {%- for report in reports -%}
+          {%- for script in report.Scripts -%}
+            {% if script.Name == "hotsos-full" %}
+        Full output for report: {{ report.Name }} can be found:  https://files.support.canonical.com/files/{{ script.UploadLocation }}
+            {% endif %}
+          {%- endfor -%}
+        {%- endfor -%}
 
       reports:
         hotsos:
-          exit-codes: 0 2 127 126
-          script: |
-            #!/bin/bash
-            echo ${{filepath}} ${{basedir}} && exit 0
-        foobar:
-          exit-codes: 0
-          script: |
-            #!/bin/bash
-            echo "foobar" && exit 0
+          scripts:
+            hotsos-full:
+              exit-codes: 0 2 127 126
+              run: |
+                #!/bin/bash
+                git clone --quiet https://github.com/dosaboy/hotsos.git {{basedir}}/hotsos &>/dev/null
+                tar -xf {{filepath}} -C {{basedir}} &>/dev/null
+                {{basedir}}/hotsos/hotsos.sh -s -a -vvvv {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                cat *.summary
+                rm -f *.summary
+                exit 0
+            hotsos-short:
+              exit-codes: 0 2 127 126
+              run: |
+                #!/bin/bash
+                git clone --quiet https://github.com/dosaboy/hotsos.git {{basedir}}/hotsos &>/dev/null
+                tar -xf {{filepath}} -C {{basedir}} &>/dev/null
+                {{basedir}}/hotsos/hotsos.sh -s --short {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                [ -s *.summary ] || echo "No known bugs or issues found on sosreport"
+                rm -f *.summary
+                exit 0
 
 filescom:
   key: "xxx"
@@ -47,6 +71,6 @@ filescom:
 
 salesforce:
   endpoint: "https://xxx--xxx.my.salesforce.com/"
-  username: "xxx.xxx@xxxx"
+  username: "xx.xx@xxx.com.xxx"
   password: "xxx"
   security-token: "xxx"

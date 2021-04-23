@@ -17,11 +17,21 @@ type File struct {
 type Report struct {
 	gorm.Model
 
-	Created        time.Time `gorm:"autoCreateTime"`
-	Commented      bool      `gorm:"default:false"`
-	UploadLocation string
-	Subscriber     string
+	Created    time.Time `gorm:"<-:create"`
+	Commented  bool      `gorm:"default:false"`
+	Subscriber string
+	Name       string
+	FileID     uint
+	FilePath   string
+	CaseID     string
+	Scripts    []Script
+}
+
+type Script struct {
+	gorm.Model
+
+	Output         string
 	Name           string
-	FileID         uint
-	CaseID         string
+	UploadLocation string
+	ReportID       uint
 }
