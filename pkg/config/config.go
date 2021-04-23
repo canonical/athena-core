@@ -5,11 +5,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Report struct {
-	Command   string `yaml:"command"`
+type Script struct {
 	Timeout   string `yaml:"timeout" default:"0s"`
-	Script    string `yaml:"script"`
 	ExitCodes string `yaml:"exit-codes" default:"any"`
+	Run       string `yaml:"run"`
+	RunScript string
+}
+
+type Report struct {
+	Timeout string            `yaml:"timeout" default:"0s"`
+	Scripts map[string]Script `yaml:"scripts"`
 }
 
 type Subscriber struct {

@@ -7,9 +7,9 @@ import (
 	"github.com/go-orm/gorm"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
-	"github.com/niedbalski/go-athena/pkg/common"
-	"github.com/niedbalski/go-athena/pkg/common/db"
-	"github.com/niedbalski/go-athena/pkg/config"
+	"github.com/project-athena/athena-core/pkg/common"
+	"github.com/project-athena/athena-core/pkg/common/db"
+	"github.com/project-athena/athena-core/pkg/config"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -44,10 +44,11 @@ func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 }
 
 type ReportToExecute struct {
-	Name, Command, BaseDir, ExitCodes, Subscriber string
-	File                                          *db.File
-	Timeout                                       time.Duration
-	Output                                        []byte
+	Name, BaseDir, Subscriber string
+	File                      *db.File
+	Scripts                   map[string]string
+	Timeout                   time.Duration
+	Output                    []byte
 }
 
 type ReportRunner struct {
@@ -59,11 +60,11 @@ type ReportRunner struct {
 	Db                        *gorm.DB
 }
 
-func RunWithTimeout(report *ReportToExecute) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), report.Timeout)
+func RunWithTimeout(baseDir string, timeout time.Duration, command string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "bash", "-c", report.Command)
-	cmd.Dir = report.BaseDir
+	cmd := exec.CommandContext(ctx, "bash", "-c", command)
+	cmd.Dir = baseDir
 	//cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: task.Pgid}
 
 	output, err := cmd.CombinedOutput()
@@ -74,30 +75,48 @@ func RunWithTimeout(report *ReportToExecute) ([]byte, error) {
 	return output, err
 }
 
-func RunWithoutTimeout(report *ReportToExecute) ([]byte, error) {
-	cmd := exec.Command("bash", "-c", report.Command)
-	cmd.Dir = report.BaseDir
+func RunWithoutTimeout(baseDir string, command string) ([]byte, error) {
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = baseDir
 	return cmd.CombinedOutput()
 }
 
-func RunReport(report *ReportToExecute) ([]byte, error) {
-	if report.Timeout > 0 {
-		return RunWithTimeout(report)
+func RunReport(report *ReportToExecute) (map[string][]byte, error) {
+	var output = make(map[string][]byte)
+
+	for scriptName, script := range report.Scripts {
+		logrus.Debugf("Running script:%s for report: %s", scriptName, report.Name)
+		var ret []byte
+		var err error
+		if report.Timeout > 0 {
+			ret, err = RunWithTimeout(report.BaseDir, report.Timeout, script)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			ret, err = RunWithoutTimeout(report.BaseDir, script)
+			if err != nil {
+				return nil, err
+			}
+		}
+		output[scriptName] = ret
 	}
-	return RunWithoutTimeout(report)
+
+	return output, nil
 }
 
-const DefaultReportOutputFormat = "%s.athena-%s-report"
+const DefaultReportOutputFormat = "%s.athena-%s.%s"
 
-func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content string) error {
+func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, scriptOutputs map[string][]byte) error {
 	var file db.File
+	var uploadPath string
 	filePath := report.File.Path
+
+	logrus.Debugf("fetching files on path: %s", filePath)
 	result := runner.Db.Where("path = ?", filePath).First(&file)
 	if result.Error != nil {
 		return fmt.Errorf("cannot find a file with path: %s on the database", filePath)
 	}
-
-	var uploadPath string
 
 	if runner.Config.Processor.ReportsUploadPath == "" {
 		uploadPath = filePath
@@ -105,12 +124,6 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content
 		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, filepath.Base(filePath))
 	}
 
-	uploadedFilePath, err := runner.FilescomClient.Upload(content, fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name))
-	if err != nil {
-		return fmt.Errorf("cannot upload file: %s", filePath)
-	}
-
-	logrus.Debugf("Uploaded file: %s", uploadedFilePath.DownloadUri)
 	caseNumber, err := common.GetCaseNumberByFilename(filePath)
 	if err != nil || caseNumber == "" {
 		return fmt.Errorf("not found case number on filename: %s", filePath)
@@ -122,29 +135,58 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, content
 		return err
 	}
 
-	if r := runner.Db.Save(&db.Report{
-		Created: time.Now(), CaseID: sfCase.Id, Commented: false, UploadLocation: uploadedFilePath.Path, Name: report.Name, FileID: file.ID, Subscriber: report.Subscriber}); r.Error != nil {
+	logrus.Debugf("Got case %s from salesforce", sfCase)
+	var newReport = new(db.Report)
+
+	newReport.Created = time.Now()
+	newReport.CaseID = sfCase.Id
+	newReport.FilePath = file.Path
+	newReport.Name = report.Name
+	newReport.FileID = file.ID
+	newReport.Subscriber = report.Subscriber
+
+	logrus.Debugf("Uploading script outputs")
+	for scriptName, output := range scriptOutputs {
+		uploadedFilePath, err := runner.FilescomClient.Upload(string(output), fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name, scriptName))
+		if err != nil {
+			return fmt.Errorf("cannot upload file: %s", filePath)
+		}
+
+		logrus.Debugf("Uploaded file: %s", uploadedFilePath.Path)
+		newReport.Scripts = append(newReport.Scripts, db.Script{
+			Output:         string(output),
+			Name:           scriptName,
+			UploadLocation: uploadedFilePath.Path,
+		})
+	}
+
+	if r := runner.Db.Create(newReport); r.Error != nil {
+		logrus.Errorf("error creating new report: %s", newReport.FilePath)
 		return err
 	}
 
-	logrus.Infof("Saved report name: %s on path:%s - case id: %s", report.Name, uploadedFilePath.Path, sfCase.CaseNumber)
+	if r := runner.Db.Save(newReport); r.Error != nil {
+		logrus.Errorf("error creating new report: %s", newReport.FilePath)
+		return err
+	}
+
+	logrus.Infof("Saved report name: %s for case id: %s", report.Name, sfCase.CaseNumber)
 	return nil
 }
 
-func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) ([]byte, error)) error {
+func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) (map[string][]byte, error)) error {
 	for _, report := range runner.Reports {
 		var err error
-		var output []byte
 
 		logrus.Debugf("Running report: %s on file: %s", report.Name, report.File.Path)
-		output, err = reportFn(&report)
+		scriptOutputs, err := reportFn(&report)
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
 
-		logrus.Debugf("Uploading and saving report:%s for file: %s", report.Name, report.File.Path)
-		if err := runner.UploadAndSaveReport(&report, string(output)); err != nil {
+		logrus.Debugf("Uploading and saving report:%s script outputs: %d - for file: %s", report.Name, len(scriptOutputs), report.File.Path)
+		if err := runner.UploadAndSaveReport(&report, scriptOutputs); err != nil {
 			logrus.Errorf("cannot upload and save report: %s - error: %s", report.Name, err)
 			continue
 		}
@@ -171,7 +213,6 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 	file *db.File, reports map[string]config.Report) (*ReportRunner, error) {
 
 	var reportRunner ReportRunner
-	var command string
 
 	basePath := cfg.Processor.BaseTmpDir
 	if basePath == "" {
@@ -211,8 +252,15 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		"filepath": path.Join(reportRunner.Basedir, filepath.Base(fileEntry.Path)), // directory where the file lives on
 	}
 
-	for name, report := range reports {
-		if report.Script != "" {
+	var scripts = make(map[string]string)
+
+	for reportName, report := range reports {
+		logrus.Debugf("running %d scripts for report: %s", len(report.Scripts), reportName)
+		for scriptName, script := range report.Scripts {
+			if script.Run == "" {
+				logrus.Errorf("not provided script to run for: %s", scriptName)
+				continue
+			}
 			fd, err := ioutil.TempFile(reportRunner.Basedir, "run-script-")
 			if err != nil {
 				return nil, err
@@ -221,7 +269,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 				return nil, err
 			}
 
-			out, err := renderTemplate(&tplContext, report.Script)
+			out, err := renderTemplate(&tplContext, script.Run)
 			if err != nil {
 				return nil, err
 			}
@@ -233,12 +281,8 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 			if err = fd.Close(); err != nil {
 				return nil, err
 			}
-			command = fd.Name()
-		} else {
-			command, err = renderTemplate(&tplContext, report.Command)
-			if err != nil {
-				return nil, err
-			}
+
+			scripts[scriptName] = fd.Name()
 		}
 
 		timeout, err := time.ParseDuration(report.Timeout)
@@ -248,12 +292,11 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 
 		reportToExecute := ReportToExecute{}
 		reportToExecute.Timeout = timeout
-		reportToExecute.Command = command
 		reportToExecute.BaseDir = reportRunner.Basedir
-		reportToExecute.ExitCodes = report.ExitCodes
 		reportToExecute.Subscriber = reportRunner.Subscriber
-		reportToExecute.Name = name
+		reportToExecute.Name = reportName
 		reportToExecute.File = file
+		reportToExecute.Scripts = scripts
 		reportRunner.Reports = append(reportRunner.Reports, reportToExecute)
 	}
 
@@ -348,13 +391,13 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 	}
 
 	logrus.Infof("Running process to send batched comments to salesforce every %s", interval)
-	if results := p.Db.Where("created <= ? and commented = ?", time.Now().Add(-interval), false).Find(&reports); results.Error != nil {
-		logrus.Error(results.Error)
+	if results := p.Db.Preload("Scripts").Where("created <= ? and commented = ?", time.Now().Add(-interval), false).Find(&reports); results.Error != nil {
+		logrus.Errorf("error getting batched comments: %s", results.Error)
 		return
 	}
 
 	if len(reports) <= 0 {
-		logrus.Errorf("Not found reports to be processed, skipping")
+		logrus.Warnf("Not found reports to be processed, skipping")
 		return
 	}
 

@@ -4,7 +4,7 @@ import (
 	filessdk "github.com/Files-com/files-sdk-go"
 	"github.com/Files-com/files-sdk-go/file"
 	"github.com/Files-com/files-sdk-go/folder"
-	"github.com/niedbalski/go-athena/pkg/common/db"
+	"github.com/project-athena/athena-core/pkg/common/db"
 	"github.com/sirupsen/logrus"
 	"path"
 	"path/filepath"
@@ -28,7 +28,7 @@ type BaseFilesComClient struct {
 func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*filessdk.File, error) {
 	logrus.Infof("creating new file on path: %s", destinationPath)
 	data := strings.NewReader(contents)
-	fileEntry, err := client.ApiClient.Upload(data, destinationPath, &file.UploadProgress{})
+	fileEntry, err := client.ApiClient.Upload(data, filessdk.FileActionBeginUploadParams{Path: destinationPath}, &file.UploadProgress{})
 	if err != nil {
 		return nil, err
 	}
