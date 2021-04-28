@@ -30,7 +30,7 @@ type Report struct {
 type Script struct {
 	gorm.Model
 
-	Output         string
+	Output         string `gorm:"type:text"`
 	Name           string
 	UploadLocation string
 	ReportID       uint
