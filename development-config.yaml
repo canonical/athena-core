@@ -50,7 +50,7 @@ processor:
                 #!/bin/bash
                 git clone --quiet https://github.com/dosaboy/hotsos.git {{basedir}}/hotsos &>/dev/null
                 tar -xf {{filepath}} -C {{basedir}} &>/dev/null
-                {{basedir}}/hotsos/hotsos.sh -s -a -vvvv {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                {{basedir}}/hotsos/hotsos.sh -s -a {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
                 cat *.summary
                 rm -f *.summary
                 exit 0
