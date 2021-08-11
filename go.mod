@@ -8,6 +8,7 @@ require (
 	github.com/go-orm/gorm v0.0.0-20161201081620-eb06255b667d
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/jinzhu/gorm v1.9.16 // indirect
+	github.com/jinzhu/now v1.1.2 // indirect
 	github.com/lileio/pubsub/v2 v2.5.0
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
@@ -19,5 +20,4 @@ require (
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	gorm.io/gorm v1.21.8
 )
