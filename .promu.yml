@@ -1,17 +1,16 @@
 go:
   # Whenever the Go version is updated here,
   # .circle/config.yml should also be updated.
-  version: 1.15
-  cgo: true
+  version: 1.16
 repository:
   path: github.com/project-athena/athena-core
 build:
+  flags: -a -tags 'netgo static_build'
   binaries:
     - name: athena-processor
       path: ./cmd/processor
     - name: athena-monitor
       path: ./cmd/monitor
-  #flags: -mod=vendor -a -tags netgo,builtinassets
 tarball:
   files:
     - LICENSE
