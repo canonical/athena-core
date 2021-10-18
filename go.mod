@@ -1,4 +1,4 @@
-module github.com/project-athena/athena-core
+module github.com/canonical/athena-core
 
 go 1.16
 

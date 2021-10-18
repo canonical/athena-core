@@ -3,7 +3,7 @@ package db
 import (
 	"github.com/go-orm/gorm"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/project-athena/athena-core/pkg/config"
+	"github.com/canonical/athena-core/pkg/config"
 )
 
 func GetDBConn(cfg *config.Config) (*gorm.DB, error) {
