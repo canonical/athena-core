@@ -4,7 +4,7 @@ import (
 	filessdk "github.com/Files-com/files-sdk-go"
 	"github.com/Files-com/files-sdk-go/file"
 	"github.com/Files-com/files-sdk-go/folder"
-	"github.com/project-athena/athena-core/pkg/common/db"
+	"github.com/canonical/athena-core/pkg/common/db"
 	"github.com/sirupsen/logrus"
 	"path"
 	"path/filepath"

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/project-athena/athena-core/pkg/config"
+	"github.com/canonical/athena-core/pkg/config"
 )
 
 type DaemonParams struct {

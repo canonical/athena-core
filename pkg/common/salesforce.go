@@ -2,7 +2,7 @@ package common
 
 import (
 	"fmt"
-	"github.com/project-athena/athena-core/pkg/config"
+	"github.com/canonical/athena-core/pkg/config"
 	"github.com/simpleforce/simpleforce"
 	"regexp"
 )
