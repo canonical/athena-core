@@ -15,7 +15,7 @@ require (
 	github.com/nats-io/nats-server/v2 v2.2.2 // indirect
 	github.com/nats-io/nats-streaming-server v0.21.2 // indirect
 	github.com/nats-io/stan.go v0.8.3
-	github.com/simpleforce/simpleforce v0.0.0-20210422092246-451f45b10354
+	github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
