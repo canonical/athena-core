@@ -2,12 +2,12 @@ package monitor
 
 import (
 	"context"
-	"github.com/go-orm/gorm"
-	_ "github.com/go-orm/gorm/dialects/sqlite"
-	"github.com/lileio/pubsub/v2/providers/memory"
 	"github.com/canonical/athena-core/pkg/common/db"
 	"github.com/canonical/athena-core/pkg/common/test"
 	"github.com/canonical/athena-core/pkg/config"
+	"github.com/go-orm/gorm"
+	_ "github.com/go-orm/gorm/dialects/sqlite"
+	"github.com/lileio/pubsub/v2/providers/memory"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
