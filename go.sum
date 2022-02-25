@@ -325,6 +325,8 @@ github.com/segmentio/ksuid v1.0.3 h1:FoResxvleQwYiPAVKe1tMUlEirodZqlqglIuFsdDntY
 github.com/segmentio/ksuid v1.0.3/go.mod h1:/XUiZBD3kVx5SmUOl55voK5yeAbBNNIed+2O73XgrPE=
 github.com/simpleforce/simpleforce v0.0.0-20210422092246-451f45b10354 h1:RyWGfGPc4X9d4LIApBIMM3GTQ7i6iYujnw2qfVUri4Q=
 github.com/simpleforce/simpleforce v0.0.0-20210422092246-451f45b10354/go.mod h1:abS7k7nPhcNtzsAsfzOedGmI7yU0PDzQVwlHJZwGgOs=
+github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea h1:U1R5zYZiav6wjwrnNVKk1FgikIetLx0sQfQfk40N1qY=
+github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea/go.mod h1:smilciuVOz+ftYBgSskSZp/a+xLyp34dmm7RWmFMDBw=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=

@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/lileio/pubsub/v2"
-	"github.com/lileio/pubsub/v2/providers/nats"
-	"github.com/nats-io/stan.go"
 	"github.com/canonical/athena-core/pkg/common"
 	"github.com/canonical/athena-core/pkg/config"
 	"github.com/canonical/athena-core/pkg/monitor"
+	"github.com/lileio/pubsub/v2"
+	"github.com/lileio/pubsub/v2/providers/nats"
+	"github.com/nats-io/stan.go"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
 	"os/signal"
