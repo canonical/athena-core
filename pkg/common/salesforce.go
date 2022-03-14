@@ -2,9 +2,11 @@ package common
 
 import (
 	"fmt"
+	"html"
+	"regexp"
+
 	"github.com/canonical/athena-core/pkg/config"
 	"github.com/simpleforce/simpleforce"
-	"regexp"
 )
 
 type SalesforceClient interface {
@@ -31,7 +33,7 @@ type Case struct {
 func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) *simpleforce.SObject {
 	return sf.SObject("CaseComment").
 		Set("ParentId", caseId).
-		Set("CommentBody", body).
+		Set("CommentBody", html.UnescapeString(body)).
 		Set("IsPublished", isPublic).
 		Create()
 }
