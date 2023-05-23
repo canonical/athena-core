@@ -1,0 +1,88 @@
+name: Docker publish (ghcr.io)
+
+on:
+  schedule:
+    - cron: '38 11 * * *'
+  push:
+    branches: ["main"]
+    # Publish semver tags as releases.
+    tags: ['v*.*.*']
+  pull_request:
+    branches: ["main"]
+
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.15.x
+
+      - name: Test and Build
+        run: make all
+
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata - processor
+        id: processor_meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/athena-processor
+
+      - name: Build and publish Docker - processor
+        id: processor-build-and-push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./cmd/processor/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.processor_meta.outputs.tags }}
+          labels: ${{ steps.processor_meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract Docker metadata - monitor
+        id: monitor_meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/athena-monitor
+
+      - name: Build and publish Docker - monitor
+        id: monitor_build-and-push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./cmd/monitor/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.monitor_meta.outputs.tags }}
+          labels: ${{ steps.monitor_meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
