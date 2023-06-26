@@ -57,9 +57,11 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 
 	b, _ := json.Marshal(db.File{Path: "/uploads/sosreport-123.tar.xz"})
 	b1, _ := json.Marshal(db.File{Path: "/uploads/sosreport-321.tar.xz"})
+	b2, _ := json.Marshal(db.File{Path: "/uploads/sosreport-abc.tar.xz"})
 
 	_ = provider.Publish(context.Background(), "sosreports", &pubsub.Msg{Data: b})
 	_ = provider.Publish(context.Background(), "sosreports", &pubsub.Msg{Data: b1})
+	_ = provider.Publish(context.Background(), "sosreports", &pubsub.Msg{Data: b2})
 
 	var called = 0
 
@@ -79,8 +81,8 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 		return &subscriber
 	})
 
-	assert.Equal(s.T(), called, 2)
-	assert.Equal(s.T(), len(provider.Msgs["sosreports"]), 2)
+	assert.Equal(s.T(), called, 3)
+	assert.Equal(s.T(), len(provider.Msgs["sosreports"]), 3)
 }
 
 func TestNewProcessor(t *testing.T) {

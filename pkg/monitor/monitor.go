@@ -75,12 +75,14 @@ func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.F
 	for _, file := range files {
 		var processors []string
 
-		caseNumber, err := common.GetCaseNumberByFilename(file.Path)
-		if err == nil && caseNumber != "" {
+		caseNumber, err := common.GetCaseNumberFromFilename(file.Path)
+		if err == nil {
 			sfCase, err = m.SalesforceClient.GetCaseByNumber(caseNumber)
 			if err != nil {
 				log.Error(err)
 			}
+		} else {
+			log.Error(err)
 		}
 
 		if sfCase != nil {
