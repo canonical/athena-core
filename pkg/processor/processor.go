@@ -107,7 +107,7 @@ func RunReport(report *ReportToExecute) (map[string][]byte, error) {
 
 const DefaultReportOutputFormat = "%s.athena-%s.%s"
 
-func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, scriptOutputs map[string][]byte) error {
+func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNumber string, scriptOutputs map[string][]byte) error {
 	var file db.File
 	var uploadPath string
 	filePath := report.File.Path
@@ -122,11 +122,6 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, scriptO
 		uploadPath = filePath
 	} else {
 		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, filepath.Base(filePath))
-	}
-
-	caseNumber, err := common.GetCaseNumberByFilename(filePath)
-	if err != nil || caseNumber == "" {
-		return fmt.Errorf("not found case number on filename: %s", filePath)
 	}
 
 	logrus.Infof("Getting case from salesforce number: %s", caseNumber)
@@ -178,6 +173,12 @@ func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) (map[stri
 	for _, report := range runner.Reports {
 		var err error
 
+		caseNumber, err := common.GetCaseNumberFromFilename(report.File.Path)
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+
 		logrus.Debugf("Running report: %s on file: %s", report.Name, report.File.Path)
 		scriptOutputs, err := reportFn(&report)
 		if err != nil {
@@ -186,8 +187,8 @@ func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) (map[stri
 		}
 
 		logrus.Debugf("Uploading and saving report:%s script outputs: %d - for file: %s", report.Name, len(scriptOutputs), report.File.Path)
-		if err := runner.UploadAndSaveReport(&report, scriptOutputs); err != nil {
-			logrus.Errorf("cannot upload and save report: %s - error: %s", report.Name, err)
+		if err := runner.UploadAndSaveReport(&report, caseNumber, scriptOutputs); err != nil {
+			logrus.Errorf("Failed to upload and save report: %s - error: %s", report.Name, err)
 			continue
 		}
 	}

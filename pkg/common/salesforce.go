@@ -59,17 +59,17 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 	return nil, fmt.Errorf("Not found case with number: %s", number)
 }
 
-func GetCaseNumberByFilename(filename string) (string, error) {
+func GetCaseNumberFromFilename(filename string) (string, error) {
 	regex, err := regexp.Compile(`(\d{6,})`)
 	if err != nil {
 		return "", err
 	}
 
 	for _, candidate := range regex.FindAll([]byte(filename), 1) {
-		if len(candidate) <= 8 {
+		if len(candidate) <= 8 && len(candidate) > 0 {
 			return string(candidate), nil
 		}
 	}
 
-	return "", fmt.Errorf("Not found case number on: %s", filename)
+	return "", fmt.Errorf("Could not identify case number from filename '%s'", filename)
 }
