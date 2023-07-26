@@ -91,11 +91,13 @@ func RunReport(report *ReportToExecute) (map[string][]byte, error) {
 		if report.Timeout > 0 {
 			ret, err = RunWithTimeout(report.BaseDir, report.Timeout, script)
 			if err != nil {
+				logrus.Error(err)
 				return nil, err
 			}
 		} else {
 			ret, err = RunWithoutTimeout(report.BaseDir, script)
 			if err != nil {
+				logrus.Error(err)
 				return nil, err
 			}
 		}
