@@ -19,32 +19,4 @@ jobs:
         uses: actions/checkout@v2
       - name: Test and Build
         run: make all
-  release-snap:
-    name: Release snaps for main branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set outputs
-        id: vars
-        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-      - name: Replace snapcraft version/grade
-        run: sed -i -e "s/\$VERSION/${{ steps.vars.outputs.sha_short }}/g" snap/snapcraft.yaml
-      - uses: snapcore/action-build@v1
-        id: build
-      - uses: snapcore/action-publish@v1
-        with:
-          store_login: ${{ secrets.STORE_LOGIN }}
-          snap: ${{ steps.build.outputs.snap }}
-          release: edge
-  release-docker:
-    name: Release docker images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Make docker images and publish
-        run: |
-          make common-build
-          make docker DOCKER_REPO=quay.io/athena DOCKER_ARCHS="amd64"
-          docker images
-          docker login -u ${{ secrets.QUAY_LOGIN }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
-          make docker-publish DOCKER_REPO=quay.io/athena DOCKER_ARCHS="amd64"
+
