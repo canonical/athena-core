@@ -129,6 +129,16 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 	logrus.Infof("Getting case from salesforce number: %s", caseNumber)
 	sfCase, err := runner.SalesforceClient.GetCaseByNumber(caseNumber)
 	if err != nil {
+		logrus.Warn("Creating new SF client since current one is failing")
+		client, client_err := common.NewSalesforceClient(runner.Config)
+		if client_err != nil {
+			logrus.Warn("Failed to reconnect to salesforce")
+			return err
+		}
+		runner.SalesforceClient = client
+		sfCase, err = runner.SalesforceClient.GetCaseByNumber(caseNumber)
+	}
+	if err != nil {
 		return err
 	}
 

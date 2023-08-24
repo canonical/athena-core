@@ -323,8 +323,6 @@ github.com/sanity-io/litter v1.2.0/go.mod h1:JF6pZUFgu2Q0sBZ+HSV35P8TVPI1TTzEwyu
 github.com/segmentio/kafka-go v0.3.7/go.mod h1:8rEphJEczp+yDE/R5vwmaqZgF1wllrl4ioQcNKB8wVA=
 github.com/segmentio/ksuid v1.0.3 h1:FoResxvleQwYiPAVKe1tMUlEirodZqlqglIuFsdDntY=
 github.com/segmentio/ksuid v1.0.3/go.mod h1:/XUiZBD3kVx5SmUOl55voK5yeAbBNNIed+2O73XgrPE=
-github.com/simpleforce/simpleforce v0.0.0-20210422092246-451f45b10354 h1:RyWGfGPc4X9d4LIApBIMM3GTQ7i6iYujnw2qfVUri4Q=
-github.com/simpleforce/simpleforce v0.0.0-20210422092246-451f45b10354/go.mod h1:abS7k7nPhcNtzsAsfzOedGmI7yU0PDzQVwlHJZwGgOs=
 github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea h1:U1R5zYZiav6wjwrnNVKk1FgikIetLx0sQfQfk40N1qY=
 github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea/go.mod h1:smilciuVOz+ftYBgSskSZp/a+xLyp34dmm7RWmFMDBw=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
