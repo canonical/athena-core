@@ -9,21 +9,21 @@ the files.com API and runs a series of reports over the downloaded artifacts
 and subsequently it talks with the Salesforce API for performing actions (currently,
 only comments are supported)
 
-### Basics
+## Basics
 
 There are 3 software components in athena:
 
-1. *Athena-monitor*: Monitor changes in several directories across a
-   file.com account and if new files are found those are sent to the processor for
+1. *Athena-monitor*: Monitor changes in several directories across a file.com
+   account and if new files are found those are sent to the processor for
    background processing.
-   
-2. *Nats*: Nats is a light messaging daemon that allows a pubsub
-system to be implemented on top, its used to dispatch messages
-   from *athena-monitor* to a *athena-processor*
-   
-3. *Athena-processor*: Subscribes to messages from monitor and
-routes the reports that have to be run over a given detected file,
-   subsequently it will perform an action on salesforce (such as posting a comment, etc)
+
+2. *Nats*: Nats is a light messaging daemon that allows a pubsub system to be
+   implemented on top, its used to dispatch messages from *athena-monitor* to a
+   *athena-processor*
+
+3. *Athena-processor*: Subscribes to messages from monitor and routes the
+   reports that have to be run over a given detected file, subsequently it will
+   perform an action on salesforce (such as posting a comment, etc)
 
 The basic flowchart of interaction is as follows
 
@@ -31,8 +31,8 @@ The basic flowchart of interaction is as follows
 
 ## Hacking
 
-Everything needed to stand up a development environment 
-is contained under a makefile, docker, docker-compose and golang >= 1.14 are required.
+Everything needed to stand up a development environment is contained under a
+makefile, docker, docker-compose and golang >= 1.14 are required.
 
 Clone this repository and run the following command to build:
 
@@ -41,8 +41,7 @@ make common-build
 ```
 
 For running a docker based installation locally
+
 ```shell
 make devel
 ```
-
-
