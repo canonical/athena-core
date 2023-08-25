@@ -44,7 +44,7 @@ func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 }
 
 type ReportToExecute struct {
-	Name, BaseDir, Subscriber string
+	Name, BaseDir, Subscriber, FileName string
 	File                      *db.File
 	Scripts                   map[string]string
 	Timeout                   time.Duration
@@ -85,7 +85,7 @@ func RunReport(report *ReportToExecute) (map[string][]byte, error) {
 	var output = make(map[string][]byte)
 
 	for scriptName, script := range report.Scripts {
-		log.Debugf("Running script '%s' on sosreport '%s'", scriptName, report.Name)
+		log.Debugf("Running script '%s' on sosreport '%s'", scriptName, report.FileName)
 		var ret []byte
 		var err error
 		if report.Timeout > 0 {
@@ -142,6 +142,7 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 	newReport.Created = time.Now()
 	newReport.CaseID = sfCase.Id
 	newReport.FilePath = file.Path
+	newReport.FileName = filepath.Base(file.Path)
 	newReport.Name = report.Name
 	newReport.FileID = file.ID
 	newReport.Subscriber = report.Subscriber
@@ -149,7 +150,7 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 	if runner.Config.Processor.ReportsUploadPath == "" {
 		uploadPath = filePath
 	} else {
-		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, filepath.Base(filePath))
+		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, newReport.FileName)
 	}
 
 	log.Debugf("Uploading script output to files.com")
@@ -189,7 +190,7 @@ func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) (map[stri
 
 		caseNumber, err := common.GetCaseNumberFromFilename(report.File.Path)
 		if err != nil {
-			log.Error(err)
+			log.Info(err)
 			continue
 		}
 
@@ -200,7 +201,7 @@ func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) (map[stri
 			continue
 		}
 
-		log.Debugf("Uploading and saving results of running '%s' on '%s' (count=%d)", report.Name, report.File.Path, len(scriptOutputs))
+		log.Debugf("Uploading and saving results of running '%s' on '%s' (count=%d)", report.Name, report.FileName, len(scriptOutputs))
 		if err := runner.UploadAndSaveReport(&report, caseNumber, scriptOutputs); err != nil {
 			log.Errorf("Failed to upload and save output of '%s': %s", report.Name, err)
 			continue
@@ -412,7 +413,7 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 	}
 
 	if len(reports) <= 0 {
-		log.Warnf("No reports found to be processed - skipping")
+		log.Info("No reports found to be processed - skipping")
 		return
 	}
 
@@ -466,7 +467,7 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 					continue
 				}
 
-				log.Infof("Successfully posted comment on case %s for  %d reports", caseId, len(reports))
+				log.Infof("Successfully posted comment on case %s for %d reports", caseId, len(reports))
 				for _, report := range reports {
 					report.Commented = true
 					p.Db.Save(report)

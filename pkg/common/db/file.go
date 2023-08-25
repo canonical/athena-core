@@ -21,6 +21,7 @@ type Report struct {
 	Commented  bool      `gorm:"default:false"`
 	Subscriber string
 	Name       string
+	FileName   string
 	FileID     uint
 	FilePath   string
 	CaseID     string
