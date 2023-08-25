@@ -45,10 +45,10 @@ func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 
 type ReportToExecute struct {
 	Name, BaseDir, Subscriber, FileName string
-	File                      *db.File
-	Scripts                   map[string]string
-	Timeout                   time.Duration
-	Output                    []byte
+	File                                *db.File
+	Scripts                             map[string]string
+	Timeout                             time.Duration
+	Output                              []byte
 }
 
 type ReportRunner struct {
