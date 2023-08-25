@@ -270,7 +270,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 	var scripts = make(map[string]string)
 
 	for reportName, report := range reports {
-		log.Debugf("Running %d scripts on sosreport '%s'", len(report.Scripts), reportName)
+		log.Debugf("Running %s script(s) (num=%d)", reportName, len(report.Scripts))
 		for scriptName, script := range report.Scripts {
 			if script.Run == "" {
 				log.Errorf("No script provided to run on '%s'", scriptName)
