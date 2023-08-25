@@ -37,7 +37,7 @@ See cmd/monitor/Dockerfile and cmd/processor/Dockerfile for image config.
 Build monitor:
 
 ```
-# docker build cmd/monitor/
+# docker build --file cmd/monitor/Dockerfile .
 Sending build context to Docker daemon   17.3MB
 Step 1/6 : FROM ubuntu:20.04
 20.04: Pulling from library/ubuntu
@@ -58,7 +58,7 @@ Successfully built 32ca0a3b8176
 Build processor:
 
 ```
-# docker build cmd/processor/
+# docker build --file cmd/processor/Dockerfile .
 Sending build context to Docker daemon   17.9MB
 Step 1/6 : FROM ubuntu:20.04
  ---> d5447fc01ae6
@@ -103,4 +103,3 @@ CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
 make devel
 ```
-
