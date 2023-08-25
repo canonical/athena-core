@@ -233,10 +233,11 @@ common-tarball: promu
 .PHONY: common-docker $(BUILD_DOCKER_IMAGES)
 common-docker: $(BUILD_DOCKER_IMAGES)
 $(BUILD_DOCKER_IMAGES): common-docker-%:
-	docker build -t "$(DOCKER_REPO)/athena-$*-linux-$(DOCKER_ARCHS):$(DOCKER_IMAGE_TAG)" \
+	DOCKER_BUILDKIT=1 docker build -t "$(DOCKER_REPO)/athena-$*-linux-$(DOCKER_ARCHS):$(DOCKER_IMAGE_TAG)" \
 		-f ./cmd/$*/$(DOCKERFILE_PATH) \
 		--build-arg ARCH=$(DOCKER_ARCHS) \
 		--build-arg OS="linux" \
+		--secret id=pro_attach_config,src=pro-attach-config.yaml \
 		$(DOCKERBUILD_CONTEXT)
 
 .PHONY: common-docker-publish $(PUBLISH_DOCKER_IMAGES)

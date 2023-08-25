@@ -1,0 +1,14 @@
+# If a non-commented "token:" line exists in the secret but the attachment
+# fails, the build will error. However if no token exists it will not
+# error and build without Ubuntu Pro. This is to ensure the GitHub action
+# fails if the token becomes invalid but also allows for local development
+# without a token.
+
+# Uncomment the following lines and insert your TOKEN from
+# https://ubuntu.com/pro/dashboard to enable Ubuntu Pro in the docker image
+# build
+
+#token: TOKEN
+#enable_services:
+#  - esm-infra
+#  - esm-apps

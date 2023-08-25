@@ -67,6 +67,8 @@ jobs:
           labels: ${{ steps.processor_meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          secrets: |
+            "pro_attach_config=${{ secrets.PRO_ATTACH_CONFIG }}"
 
       - name: Extract Docker metadata - monitor
         id: monitor_meta
@@ -86,3 +88,5 @@ jobs:
           labels: ${{ steps.monitor_meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          secrets: |
+            "pro_attach_config=${{ secrets.PRO_ATTACH_CONFIG }}"
