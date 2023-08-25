@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/canonical/athena-core/pkg/config"
+    "github.com/canonical/athena-core/pkg/config"
 )
 
 type DaemonParams struct {
-	Config *config.Config
+    Config *config.Config
 }

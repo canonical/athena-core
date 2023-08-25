@@ -1,37 +1,37 @@
 package db
 
 import (
-	"github.com/go-orm/gorm"
-	"time"
+    "github.com/go-orm/gorm"
+    "time"
 )
 
 type File struct {
-	gorm.Model
+    gorm.Model
 
-	Created    time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
-	Dispatched bool      `gorm:"default:false"`
-	Path       string    `gorm:"primary_key"`
-	Reports    []Report
+    Created    time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
+    Dispatched bool      `gorm:"default:false"`
+    Path       string    `gorm:"primary_key"`
+    Reports    []Report
 }
 
 type Report struct {
-	gorm.Model
+    gorm.Model
 
-	Created    time.Time `gorm:"<-:create"`
-	Commented  bool      `gorm:"default:false"`
-	Subscriber string
-	Name       string
-	FileID     uint
-	FilePath   string
-	CaseID     string
-	Scripts    []Script
+    Created    time.Time `gorm:"<-:create"`
+    Commented  bool      `gorm:"default:false"`
+    Subscriber string
+    Name       string
+    FileID     uint
+    FilePath   string
+    CaseID     string
+    Scripts    []Script
 }
 
 type Script struct {
-	gorm.Model
+    gorm.Model
 
-	Output         string `gorm:"type:text"`
-	Name           string
-	UploadLocation string
-	ReportID       uint
+    Output         string `gorm:"type:text"`
+    Name           string
+    UploadLocation string
+    ReportID       uint
 }
