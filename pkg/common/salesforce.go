@@ -56,7 +56,7 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 			}, nil
 		}
 	}
-	return nil, fmt.Errorf("Not found case with number: %s", number)
+	return nil, fmt.Errorf("No case found in Salesforce with number '%s'", number)
 }
 
 func GetCaseNumberFromFilename(filename string) (string, error) {
@@ -71,5 +71,5 @@ func GetCaseNumberFromFilename(filename string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("Could not identify case number from filename '%s'", filename)
+	return "", fmt.Errorf("Failed to identify case number from filename '%s'", filename)
 }

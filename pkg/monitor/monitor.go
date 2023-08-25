@@ -45,11 +45,11 @@ func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]stri
 				}
 			}
 		default:
-			fmt.Printf("Not found handler for %s type", processor.Type)
+			fmt.Printf("No handler found for type=%s", processor.Type)
 		}
 	}
 	if len(processors) <= 0 {
-		return nil, fmt.Errorf("Not found processors for %s", filename)
+		return nil, fmt.Errorf("No processor found for file=%s", filename)
 	}
 	return processors, nil
 }
@@ -82,7 +82,7 @@ func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.F
 				log.Error(err)
 			}
 		} else {
-			log.Error(err)
+			log.Warningf("Failed to identify case from filename '%s': %s", file.Path, err)
 		}
 
 		if sfCase != nil {
@@ -94,8 +94,9 @@ func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.F
 		for _, processor := range processors {
 			results[processor] = append(results[processor], file)
 		}
+
 		if err != nil {
-			log.Error(err)
+			log.Errorf("Failed to identify processor(s) for '%s' (case=%s): %s", file.Path, caseNumber, err)
 			continue
 		}
 	}

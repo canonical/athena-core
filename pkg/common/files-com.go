@@ -5,7 +5,7 @@ import (
 	"github.com/Files-com/files-sdk-go/file"
 	"github.com/Files-com/files-sdk-go/folder"
 	"github.com/canonical/athena-core/pkg/common/db"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"path"
 	"path/filepath"
 	"strings"
@@ -26,7 +26,7 @@ type BaseFilesComClient struct {
 }
 
 func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*filessdk.File, error) {
-	logrus.Infof("creating new file on path: %s", destinationPath)
+	log.Infof("Uploading to '%s'", destinationPath)
 	data := strings.NewReader(contents)
 	fileEntry, err := client.ApiClient.Upload(data, filessdk.FileActionBeginUploadParams{Path: destinationPath}, &file.UploadProgress{})
 	if err != nil {
@@ -36,7 +36,7 @@ func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*fil
 }
 
 func (client *BaseFilesComClient) Download(toDownload *db.File, downloadPath string) (*filessdk.File, error) {
-	logrus.Infof("downloading file: %s to path: %s", toDownload.Path, downloadPath)
+	log.Infof("Downloading '%s' to '%s'", toDownload.Path, downloadPath)
 	fileEntry, err := client.ApiClient.DownloadToFile(filessdk.FileDownloadParams{Path: toDownload.Path}, path.Join(downloadPath, filepath.Base(toDownload.Path)))
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (client *BaseFilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 
 	newClient := folder.Client{Config: client.ApiClient.Config}
 	for _, directory := range dirs {
-		logrus.Infof("Listing files available on %s", directory)
+		log.Infof("Listing files available on %s", directory)
 		params := filessdk.FolderListForParams{Path: directory}
 		it, err := newClient.ListFor(params)
 		if err != nil {
@@ -60,11 +60,11 @@ func (client *BaseFilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 			if it.Folder().Type == "directory" {
 				continue
 			}
-			logrus.Debugf("Found file with path: %s", filePath)
+			log.Debugf("Found file with path: %s", filePath)
 			files = append(files, db.File{Created: time.Now(), Path: filePath})
 		}
 	}
-	logrus.Infof("Found %d files on the target directories", len(files))
+	log.Infof("Found %d files on the target directories", len(files))
 	return files, nil
 }
 

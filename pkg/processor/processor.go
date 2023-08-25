@@ -10,7 +10,7 @@ import (
 	"github.com/go-orm/gorm"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -85,19 +85,19 @@ func RunReport(report *ReportToExecute) (map[string][]byte, error) {
 	var output = make(map[string][]byte)
 
 	for scriptName, script := range report.Scripts {
-		logrus.Debugf("Running script:%s for report: %s", scriptName, report.Name)
+		log.Debugf("Running script '%s' on sosreport '%s'", scriptName, report.Name)
 		var ret []byte
 		var err error
 		if report.Timeout > 0 {
 			ret, err = RunWithTimeout(report.BaseDir, report.Timeout, script)
 			if err != nil {
-				logrus.Error(err)
+				log.Errorf("Error occured while running script: %s", err)
 				return nil, err
 			}
 		} else {
 			ret, err = RunWithoutTimeout(report.BaseDir, script)
 			if err != nil {
-				logrus.Error(err)
+				log.Errorf("Error occured while running script: %s", err)
 				return nil, err
 			}
 		}
@@ -114,35 +114,29 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 	var uploadPath string
 	filePath := report.File.Path
 
-	logrus.Debugf("fetching files on path: %s", filePath)
+	log.Debugf("Fetching files for path '%s' from db", filePath)
 	result := runner.Db.Where("path = ?", filePath).First(&file)
 	if result.Error != nil {
-		return fmt.Errorf("cannot find a file with path: %s on the database", filePath)
+		return fmt.Errorf("File not found with path '%s' in database", filePath)
 	}
 
-	if runner.Config.Processor.ReportsUploadPath == "" {
-		uploadPath = filePath
-	} else {
-		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, filepath.Base(filePath))
-	}
-
-	logrus.Infof("Getting case from salesforce number: %s", caseNumber)
+	log.Infof("Fetching case with number '%s' from Salesforce", caseNumber)
 	sfCase, err := runner.SalesforceClient.GetCaseByNumber(caseNumber)
 	if err != nil {
-		logrus.Warn("Creating new SF client since current one is failing")
+		log.Warn("Creating new SF client since current one is failing")
 		client, client_err := common.NewSalesforceClient(runner.Config)
 		if client_err != nil {
-			logrus.Warn("Failed to reconnect to salesforce")
+			log.Errorf("Failed to reconnect to salesforce: %s", client_err)
 			return err
 		}
 		runner.SalesforceClient = client
 		sfCase, err = runner.SalesforceClient.GetCaseByNumber(caseNumber)
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
-	logrus.Debugf("Got case %s from salesforce", sfCase)
+	log.Debugf("Case %s successfully fetched from Salesforce", sfCase)
 	var newReport = new(db.Report)
 
 	newReport.Created = time.Now()
@@ -152,32 +146,40 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 	newReport.FileID = file.ID
 	newReport.Subscriber = report.Subscriber
 
-	logrus.Debugf("Uploading script outputs")
+	if runner.Config.Processor.ReportsUploadPath == "" {
+		uploadPath = filePath
+	} else {
+		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, filepath.Base(filePath))
+	}
+
+	log.Debugf("Uploading script output to files.com")
 	for scriptName, output := range scriptOutputs {
-		uploadedFilePath, err := runner.FilescomClient.Upload(string(output), fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name, scriptName))
+		dst_fname := fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name, scriptName)
+		uploadedFilePath, err := runner.FilescomClient.Upload(string(output), dst_fname)
 		if err != nil {
-			return fmt.Errorf("cannot upload file: %s", filePath)
+			return fmt.Errorf("Failed to upload file '%s'", dst_fname)
 		}
 
-		logrus.Debugf("Uploaded file: %s", uploadedFilePath.Path)
-		newReport.Scripts = append(newReport.Scripts, db.Script{
+		log.Debugf("Successfully uploaded file '%s'", uploadedFilePath.Path)
+		script_result := db.Script{
 			Output:         string(output),
 			Name:           scriptName,
 			UploadLocation: uploadedFilePath.Path,
-		})
+		}
+		newReport.Scripts = append(newReport.Scripts, script_result)
 	}
 
 	if r := runner.Db.Create(newReport); r.Error != nil {
-		logrus.Errorf("error creating new report: %s", newReport.FilePath)
+		log.Errorf("Failed to create new report for '%s' in db", newReport.FilePath)
 		return err
 	}
 
 	if r := runner.Db.Save(newReport); r.Error != nil {
-		logrus.Errorf("error creating new report: %s", newReport.FilePath)
+		log.Errorf("Failed to save new report for '%s' in db", newReport.FilePath)
 		return err
 	}
 
-	logrus.Infof("Saved report name: %s for case id: %s", report.Name, sfCase.CaseNumber)
+	log.Infof("Saved report '%s' in db for case id '%s'", report.Name, sfCase.CaseNumber)
 	return nil
 }
 
@@ -187,20 +189,20 @@ func (runner *ReportRunner) Run(reportFn func(report *ReportToExecute) (map[stri
 
 		caseNumber, err := common.GetCaseNumberFromFilename(report.File.Path)
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 			continue
 		}
 
-		logrus.Debugf("Running report: %s on file: %s", report.Name, report.File.Path)
+		log.Debugf("Running '%s' on '%s'", report.Name, report.File.Path)
 		scriptOutputs, err := reportFn(&report)
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 			continue
 		}
 
-		logrus.Debugf("Uploading and saving report:%s script outputs: %d - for file: %s", report.Name, len(scriptOutputs), report.File.Path)
+		log.Debugf("Uploading and saving results of running '%s' on '%s' (count=%d)", report.Name, report.File.Path, len(scriptOutputs))
 		if err := runner.UploadAndSaveReport(&report, caseNumber, scriptOutputs); err != nil {
-			logrus.Errorf("Failed to upload and save report: %s - error: %s", report.Name, err)
+			log.Errorf("Failed to upload and save output of '%s': %s", report.Name, err)
 			continue
 		}
 	}
@@ -232,9 +234,9 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		basePath = "/tmp"
 	}
 
-	logrus.Debugf("Using temporary base path: %s", basePath)
+	log.Debugf("Using temporary base path: %s", basePath)
 	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		logrus.Debugf("Temporary base path: %s doesn't exists, creating", basePath)
+		log.Debugf("Temporary base path '%s' doesn't exist - creating", basePath)
 		if err = os.MkdirAll(basePath, 0755); err != nil {
 			return nil, err
 		}
@@ -268,10 +270,10 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 	var scripts = make(map[string]string)
 
 	for reportName, report := range reports {
-		logrus.Debugf("running %d scripts for report: %s", len(report.Scripts), reportName)
+		log.Debugf("Running %d scripts on sosreport '%s'", len(report.Scripts), reportName)
 		for scriptName, script := range report.Scripts {
 			if script.Run == "" {
-				logrus.Errorf("not provided script to run for: %s", scriptName)
+				log.Errorf("No script provided to run on '%s'", scriptName)
 				continue
 			}
 			fd, err := ioutil.TempFile(reportRunner.Basedir, "run-script-")
@@ -317,19 +319,19 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 }
 
 func (runner *ReportRunner) Clean() error {
-	logrus.Infof("Removing base directory: %s for report: %s", runner.Basedir, runner.Name)
+	log.Infof("Removing base directory: %s for report: %s", runner.Basedir, runner.Name)
 	return os.RemoveAll(runner.Basedir)
 }
 
 func (s *BaseSubscriber) Handler(_ context.Context, file *db.File, msg *pubsub.Msg) error {
 	runner, err := NewReportRunner(s.Config, s.Db, s.SalesforceClient, s.FilesComClient, s.Name, s.Options.Topic, file, s.Reports)
 	if err != nil {
-		logrus.Error(err)
+		log.Errorf("Failed to get new runner: %s", err)
 		msg.Ack()
 		return err
 	}
 	if err := runner.Run(RunReport); err != nil {
-		logrus.Error(err)
+		log.Errorf("Runner failed: %s", err)
 		msg.Ack()
 		_ = runner.Clean()
 		return err
@@ -403,18 +405,18 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 		reportMap = make(map[string]map[string]map[string][]db.Report)
 	}
 
-	logrus.Infof("Running process to send batched comments to salesforce every %s", interval)
+	log.Infof("Running process to send batched comments to salesforce every %s", interval)
 	if results := p.Db.Preload("Scripts").Where("created <= ? and commented = ?", time.Now().Add(-interval), false).Find(&reports); results.Error != nil {
-		logrus.Errorf("error getting batched comments: %s", results.Error)
+		log.Errorf("error getting batched comments: %s", results.Error)
 		return
 	}
 
 	if len(reports) <= 0 {
-		logrus.Warnf("Not found reports to be processed, skipping")
+		log.Warnf("No reports found to be processed - skipping")
 		return
 	}
 
-	logrus.Infof("Found %d reports to be sent to salesforce", len(reports))
+	log.Infof("Found %d reports to be sent to salesforce", len(reports))
 	for _, report := range reports {
 		if reportMap[report.Subscriber] == nil {
 			reportMap[report.Subscriber] = make(map[string]map[string][]db.Report)
@@ -436,12 +438,12 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 				var tplContext pongo2.Context
 				subscriber, ok := p.Config.Processor.SubscribeTo[subscriberName]
 				if !ok {
-					logrus.Errorf("Not found subscriber for: %s", subscriberName)
+					log.Errorf("No subscription found for subscriber '%s'", subscriberName)
 					continue
 				}
 
 				if !subscriber.SFCommentEnabled {
-					logrus.Warnf("Salesforce comments have been disabled, skipping comments")
+					log.Warnf("Salesforce comments have been disabled, skipping comments")
 					continue
 				}
 
@@ -454,17 +456,17 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 
 				renderedComment, err := renderTemplate(&tplContext, subscriber.SFComment)
 				if err != nil {
-					logrus.Error(err)
+					log.Error(err)
 					continue
 				}
 
 				comment := p.SalesforceClient.PostComment(caseId, renderedComment, subscriber.SFCommentIsPublic)
 				if comment == nil {
-					logrus.Errorf("Cannot post comment to case id: %s", caseId)
+					log.Errorf("Failed to post comment to case id: %s", caseId)
 					continue
 				}
 
-				logrus.Infof("Posted comment on case id: %s, %d reports", caseId, len(reports))
+				log.Infof("Successfully posted comment on case %s for  %d reports", caseId, len(reports))
 				for _, report := range reports {
 					report.Commented = true
 					p.Db.Save(report)
