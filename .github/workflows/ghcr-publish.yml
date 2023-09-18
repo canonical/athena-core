@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -38,14 +38,14 @@ jobs:
         run: make all
 
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -53,13 +53,13 @@ jobs:
 
       - name: Extract Docker metadata - processor
         id: processor_meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/athena-processor
 
       - name: Build and publish Docker - processor
         id: processor-build-and-push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./cmd/processor/Dockerfile
@@ -67,18 +67,18 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.processor_meta.outputs.tags }}
           labels: ${{ steps.processor_meta.outputs.labels }}
-          cache-from: type=gha
+          # cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Extract Docker metadata - monitor
         id: monitor_meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/athena-monitor
 
       - name: Build and publish Docker - monitor
         id: monitor_build-and-push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./cmd/monitor/Dockerfile
@@ -86,5 +86,5 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.monitor_meta.outputs.tags }}
           labels: ${{ steps.monitor_meta.outputs.labels }}
-          cache-from: type=gha
+          # cache-from: type=gha
           cache-to: type=gha,mode=max
