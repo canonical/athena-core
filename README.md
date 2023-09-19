@@ -1,13 +1,13 @@
-[![athena-monitor docker image](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-monitor/status "Docker Repository on Github")](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-monitor)
-[![athena-processor docker image](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-processor/status "Docker Repository on Github")](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-processor)
-![Build workflows](https://github.com/project-athena/athena-core/workflows/Test/badge.svg)
-
 # Athena
 
-Athena is a file processor service, that consumes files stored in
-the files.com API and runs a series of reports over the downloaded artifacts
-and subsequently it talks with the Salesforce API for performing actions (currently,
-only comments are supported)
+[![Athena Processor](https://img.shields.io/badge/Container_Image-Athena_Processor-blue)](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-processor)
+[![Athena Monitor](https://img.shields.io/badge/Container_Image-Athena_Monitor-blue)](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-monitor)
+[![Docker publish (ghcr.io)](https://github.com/canonical/athena-core/actions/workflows/ghcr-publish.yml/badge.svg)](https://github.com/canonical/athena-core/actions/workflows/ghcr-publish.yml)
+
+Athena is a file processor service, that consumes files stored in the files.com
+API and runs a series of reports over the downloaded artifacts and subsequently
+it talks with the Salesforce API for performing actions (currently, only
+comments are supported)
 
 ## Basics
 
