@@ -3,7 +3,7 @@ LABEL maintainer="Canonical Sustaining Engineering <edward.hope-morley@canonical
 LABEL org.opencontainers.image.description "Athena Monitor"
 
 RUN apt update
-RUN apt --yes install \
+RUN apt-get --yes install \
     bc \
     bsdmainutils \
     ca-certificates \
