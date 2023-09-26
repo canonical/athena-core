@@ -1,0 +1,66 @@
+processor:
+  batch-comments-every: 5m
+  base-tmpdir: "/tmp/athena"
+  subscribers:
+    sosreports:
+      sf-comment-enabled: true
+      sf-comment-public: false
+      sf-comment: |
+        Athena processor: {{ processor }} subscriber: {{ subscriber }} has run the following reports.
+        {% for report in reports -%}
+          {% for script in report.Scripts -%}
+            {% if script.Name == "hotsos-short" %}
+              {% if script.Output != "" -%}
+        Summary for report: {{ report.Name }} - filepath: {{ report.FilePath }}
+        -------------------------------------------------------------------------
+        {{ script.Output }}
+              {% endif %}
+            {% endif %}
+          {%- endfor -%}
+        {%- endfor -%}
+        {%- for report in reports -%}
+          {%- for script in report.Scripts -%}
+            {% if script.Name == "hotsos-full" -%}
+        Full {{ report.Name }} output can be found at: https://files.support.canonical.com/files/{{ script.UploadLocation }}
+            {% endif %}
+          {%- endfor -%}
+        {%- endfor -%}
+
+      reports:
+        hotsos:
+          scripts:
+            hotsos-full:
+              exit-codes: 0 2 127 126
+              run: |
+                #!/bin/bash
+                pip3 install hotsos --upgrade &>/dev/null
+                tar -xf {{filepath}} -C {{basedir}} &>/dev/null
+                hotsos -s --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                if [ -s hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml ]; then
+                  cat hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml
+                else
+                  echo "No full sosreport generated."
+                fi
+                rm -rf hotsos-out
+                exit 0
+            hotsos-short:
+              exit-codes: 0 2 127 126
+              run: |
+                #!/bin/bash
+                pip3 install hotsos --upgrade &>/dev/null
+                tar -xf {{filepath}} -C {{basedir}} &>/dev/null
+                hotsos -s --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                # check on size of output and use very-short if exceeds SF comment limit
+                if [ -s hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml ]; then
+                  # SF comment limit is ~4K but leave some space for headers
+                  if (($(wc -m hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml| cut -d ' ' -f 1) > 1000)); then
+                    echo "NOTE: using --very-short since output exceeds SF comment char limit - check full summary for issue details."
+                    cat hotsos-out/*/summary/very_short/yaml/hotsos-summary.all.yaml
+                  else
+                    cat hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml
+                  fi
+                else
+                  echo "No known bugs or issues found on sosreport."
+                fi
+                rm -rf hotsos-out
+                exit 0
