@@ -59,6 +59,19 @@ type Config struct {
 	} `yaml:"filescom,omitempty"`
 }
 
+func (cfg *Config) String() string {
+	tempCfg := *cfg
+	// Sanitize output, i.e. remove sensitive information.
+	tempCfg.Salesforce.Password = "**********"
+	tempCfg.Salesforce.SecurityToken = "**********"
+	tempCfg.FilesCom.Key = "**********"
+	result, err := yaml.Marshal(tempCfg)
+	if err != nil {
+		return "could not marshal config"
+	}
+	return string(result)
+}
+
 func NewConfigFromFile(filePaths []string) (*Config, error) {
 	var config Config
 
