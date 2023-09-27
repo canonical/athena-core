@@ -64,3 +64,39 @@ processor:
                 fi
                 rm -rf hotsos-out
                 exit 0
+
+    soscollector:
+      sf-comment-enabled: true
+      sf-comment-public: false
+      sf-comment: |
+        Athena processor: {{ processor }} subscriber: {{ subscriber }} has run the following reports.
+        {%- for report in reports -%}
+          {%- for script in report.Scripts -%}
+            {% if script.Name == "hotsos" -%}
+        Full {{ report.Name }} output can be found at: https://files.support.canonical.com/files/{{ script.UploadLocation }}
+            {% endif %}
+          {%- endfor -%}
+        {%- endfor -%}
+
+      reports:
+        collector:
+          scripts:
+            hotsos:
+              run: |
+                #!/bin/bash
+                pip3 install hotsos --upgrade &> /dev/null
+                collection_path=$(tar --exclude '*/**' -tf {{filepath}})
+                tar -xf {{filepath}} -C {{basedir}} &> /dev/null
+                for report in ${collection_path}/sosreport*; do
+                  report_path=$(tar --exclude '*/**' -tf ${report})
+                  tar -xf ${report} -C ${collection_path} &> /dev/null
+                  hotsos --save --output-path hotsos-out --all-logs ${collection_path}/${report_path} &> /dev/null
+                  if [[ -s hotsos-out/${report_path}/summary/full/yaml/hotsos-summary.all.yaml ]]; then
+                    echo "-------------------------------------"
+                    echo "Analysis for ${report_path%/}"
+                    echo "-------------------------------------"
+                    cat hotsos-out/${report_path}/summary/full/yaml/hotsos-summary.all.yaml
+                  else
+                    echo "No known bugs or issues found on sosreport for ${report_path%/}"
+                  fi
+                done

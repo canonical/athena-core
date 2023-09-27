@@ -8,3 +8,6 @@ monitor:
     - type: filename
       regex: ".*sosreport.*.tar.[xz|gz]+$"
       processor: sosreports
+    - type: filename
+      regex: ".*sos-collector.*tar.[xz|gz]+$"
+      processor: soscollector
