@@ -3,6 +3,15 @@ package processor
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/canonical/athena-core/pkg/common"
 	"github.com/canonical/athena-core/pkg/common/db"
 	"github.com/canonical/athena-core/pkg/config"
@@ -11,13 +20,6 @@ import (
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path"
-	"path/filepath"
-	"sync"
-	"time"
 )
 
 type Processor struct {
@@ -65,11 +67,9 @@ func RunWithTimeout(baseDir string, timeout time.Duration, command string) ([]by
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 	cmd.Dir = baseDir
-	//cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: task.Pgid}
 
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
-		//log.Warnf("Collector: %s, timed out after %f secs (cancelled)", report.Name, report.Timeout.Seconds())
 		return nil, nil
 	}
 	return output, err
@@ -90,16 +90,15 @@ func RunReport(report *ReportToExecute) (map[string][]byte, error) {
 		var err error
 		if report.Timeout > 0 {
 			ret, err = RunWithTimeout(report.BaseDir, report.Timeout, script)
-			if err != nil {
-				log.Errorf("Error occured while running script: %s", err)
-				return nil, err
-			}
 		} else {
 			ret, err = RunWithoutTimeout(report.BaseDir, script)
-			if err != nil {
-				log.Errorf("Error occured while running script: %s", err)
-				return nil, err
+		}
+		if err != nil {
+			log.Errorf("Error occurred (test) while running script: %s", err)
+			for _, line := range strings.Split(string(ret), "\n") {
+				log.Error(line)
 			}
+			return nil, err
 		}
 		output[scriptName] = ret
 	}
