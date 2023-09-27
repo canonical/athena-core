@@ -9,6 +9,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/lileio/pubsub/v2 v2.5.0
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
