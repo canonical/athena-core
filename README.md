@@ -2,7 +2,7 @@
 
 [![Athena Processor](https://img.shields.io/badge/Container_Image-Athena_Processor-blue)](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-processor)
 [![Athena Monitor](https://img.shields.io/badge/Container_Image-Athena_Monitor-blue)](https://github.com/canonical/athena-core/pkgs/container/athena-core%2Fathena-monitor)
-[![Docker publish (ghcr.io)](https://github.com/canonical/athena-core/actions/workflows/ghcr-publish.yml/badge.svg)](https://github.com/canonical/athena-core/actions/workflows/ghcr-publish.yml)
+[![Docker publish (ghcr.io)](https://github.com/canonical/athena-core/actions/workflows/ghcr-publish.yaml/badge.svg)](https://github.com/canonical/athena-core/actions/workflows/ghcr-publish.yaml)
 
 Athena is a file processor service, that consumes files stored in the files.com
 API and runs a series of reports over the downloaded artifacts and subsequently
