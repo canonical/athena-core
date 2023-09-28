@@ -32,7 +32,7 @@ services:
 
   athena-monitor:
     container_name: athena-monitor
-    image: athena/athena-monitor-linux-amd64:main
+    image: athena/athena-monitor-linux-amd64:${BRANCH:-main}
     volumes:
       - ./development-config.yaml:/etc/athena/main.yaml
     command: /athena-monitor --log.level="debug"
@@ -45,7 +45,7 @@ services:
 
   athena-processor:
     container_name: athena-processor
-    image: athena/athena-processor-linux-amd64:main
+    image: athena/athena-processor-linux-amd64:${BRANCH:-main}
     volumes:
       - ./development-config.yaml:/etc/athena/main.yaml
     command: /athena-processor --config /etc/athena/main.yaml --log.level="debug"

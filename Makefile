@@ -17,6 +17,7 @@ DOCKER_IMAGE_NAMES ?= processor monitor
 include Makefile.common
 
 docker-compose:
-	docker-compose down --remove-orphans && docker-compose up --force-recreate -d --build
+	docker-compose down --remove-orphans
+	BRANCH=$(shell git branch --show-current) docker-compose up --force-recreate --build
 
 devel:  common-build common-docker docker-compose
