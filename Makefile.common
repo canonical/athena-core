@@ -233,8 +233,10 @@ common-tarball: promu
 .PHONY: common-docker $(BUILD_DOCKER_IMAGES)
 common-docker: $(BUILD_DOCKER_IMAGES)
 $(BUILD_DOCKER_IMAGES): common-docker-%:
-	docker build -t "$(DOCKER_REPO)/athena-$*-linux-$(DOCKER_ARCHS):$(DOCKER_IMAGE_TAG)" \
-		-f ./cmd/$*/$(DOCKERFILE_PATH) \
+	docker build \
+	    --tag "$(DOCKER_REPO)/athena-$*-linux-$(DOCKER_ARCHS):$(DOCKER_IMAGE_TAG)" \
+		--file ./cmd/$*/$(DOCKERFILE_PATH) \
+		--no-cache \
 		--build-arg ARCH=$(DOCKER_ARCHS) \
 		--build-arg OS="linux" \
 		$(DOCKERBUILD_CONTEXT)
