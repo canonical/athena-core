@@ -158,7 +158,7 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 		dst_fname := fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name, scriptName)
 		uploadedFilePath, err := runner.FilescomClient.Upload(string(output), dst_fname)
 		if err != nil {
-			return fmt.Errorf("Failed to upload file '%s'", dst_fname)
+			return fmt.Errorf("Failed to upload file '%s': %s", dst_fname, err.Error())
 		}
 
 		log.Debugf("Successfully uploaded file '%s'", uploadedFilePath.Path)
