@@ -33,5 +33,5 @@ func (fc *FilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 }
 
 func (fc *FilesComClient) Download(toDownload *db.File, downloadPath string) (*files_sdk.File, error) {
-	return nil, nil
+	return &files_sdk.File{}, nil
 }

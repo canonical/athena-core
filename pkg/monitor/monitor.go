@@ -3,6 +3,11 @@ package monitor
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
+	"sync"
+	"time"
+
 	"github.com/canonical/athena-core/pkg/common"
 	"github.com/canonical/athena-core/pkg/common/db"
 	"github.com/canonical/athena-core/pkg/config"
@@ -11,9 +16,6 @@ import (
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
 	log "github.com/sirupsen/logrus"
-	"regexp"
-	"sync"
-	"time"
 )
 
 type Monitor struct {
@@ -148,6 +150,24 @@ func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
 				log.Infof("File %s already dispatched, skipping", file.Path)
 				continue
 			}
+			log.Infof("Downloading file %s to shared folder", file.Path)
+			basePath := m.Config.Monitor.BaseTmpDir
+			if basePath == "" {
+				basePath = "/tmp"
+			}
+			if _, err := os.Stat(basePath); os.IsNotExist(err) {
+				log.Debugf("Temporary base path '%s' doesn't exist - creating", basePath)
+				if err = os.MkdirAll(basePath, 0755); err != nil {
+					log.Errorf("Cannot create temporary base path: %s", err.Error())
+				}
+			}
+			log.Debugf("Using temporary base path: %s", basePath)
+			fileEntry, err := m.FilesClient.Download(&file, basePath)
+			if err != nil {
+				log.Errorf("Failed to download %s: %s", file.Path, err)
+			}
+			log.Infof("Downloaded %s", fileEntry.Path)
+
 			log.Infof("Sending file: %s to processor: %s", file.Path, processor)
 			publishResults := pubsub.PublishJSON(*ctx, processor, file)
 			if publishResults.Err != nil {
