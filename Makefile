@@ -1,23 +1,56 @@
-# Copyright 2015 The Prometheus Authors
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+.PHONY: all
+all: lint build test
 
-DOCKER_REPO ?= athena
-DOCKER_IMAGE_NAMES ?= processor monitor
-
-include Makefile.common
-
+.PHONY: docker-compose
 docker-compose:
 	docker-compose down --remove-orphans
+	mkdir --parents tmp
 	BRANCH=$(shell git branch --show-current) docker-compose up --force-recreate --build
 
-devel:  common-build common-docker docker-compose
+.PHONY: devel
+devel:  athena-monitor athena-processor docker-build docker-compose
+
+.PHONY: common-docker monitor processor
+docker-build: athena-monitor docker-build-monitor athena-processor docker-build-processor
+
+.PHONY: docker-build-monitor docker-build-processor
+docker-build-monitor docker-build-processor: docker-build-%:
+	docker build \
+	    --tag athena/athena-$*-linux-amd64:$(subst /,-,$(shell git rev-parse --abbrev-ref HEAD)) \
+		--file cmd/$*/Dockerfile \
+		--no-cache \
+		--build-arg ARCH=amd64 \
+		--build-arg OS=linux \
+		.
+
+.PHONY: build
+build: athena-monitor athena-processor
+
+.PHONY: athena-monitor
+athena-monitor:
+	go build -v -o $@ cmd/monitor/main.go
+
+.PHONY: athena-processor
+athena-processor:
+	go build -v -o $@ cmd/processor/main.go
+
+.PHONY: lint
+lint: check_modules gofmt
+
+.PHONY: check_modules
+check_modules:
+	go mod tidy
+
+.PHONY: gofmt
+gofmt: check_modules
+	@fmt_result=$$(gofmt -d $$(find . -name '*.go' -print)); \
+		if [ -n "$${fmt_result}" ]; then \
+			echo "gofmt checking failed"; \
+			echo; \
+			echo "$${fmt_result}"; \
+			false; \
+		fi
+
+.PHONY: test
+test:
+	go test -v ./...
