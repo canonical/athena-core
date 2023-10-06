@@ -23,7 +23,7 @@ services:
       - ./creds.yaml:/etc/athena/main.yaml
       - ./athena-monitor.yaml:/etc/athena/monitor.yaml
       - ./athena-monitor-directories.yaml:/etc/athena/monitor-directories.yaml
-      - /home/ubuntu/sosreports/tmp:/tmp/athena
+      - ./tmp:/tmp/athena
     command: /athena-monitor --config /etc/athena/main.yaml --config /etc/athena/monitor.yaml --config /etc/athena/monitor-directories.yaml --log.level="debug"
     depends_on:
       - nats-streaming
@@ -39,7 +39,7 @@ services:
       - ./creds.yaml:/etc/athena/main.yaml
       - ./athena-processor.yaml:/etc/athena/processor.yaml
       - ./athena-processor-upload.yaml:/etc/athena/processor-upload.yaml
-      - /home/ubuntu/sosreports/tmp:/tmp/athena
+      - ./tmp:/tmp/athena
     command: /athena-processor --config /etc/athena/main.yaml --config /etc/athena/processor.yaml --config /etc/athena/processor-upload.yaml --log.level="debug"
     depends_on:
       - nats-streaming
