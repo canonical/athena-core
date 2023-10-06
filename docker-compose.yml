@@ -1,20 +1,5 @@
 version: "3.3"
 services:
-#  salesforce:
-#    container_name: salesforceapi
-#    image: outofcoffee/imposter-sfdc
-#    ports:
-#      - 8080:8080
-#    volumes:
-#      - ./mocks:/opt/imposter/config
-#    command: --configDir /opt/imposter/config --serverUrl http://localhost:8080
-#
-#  filescom:
-#    container_name: filescomapi
-#    image: filescom/files-mock-server:latest
-#    networks:
-#      - athena
-#    restart: always
 
   db:
     container_name: db
@@ -29,13 +14,17 @@ services:
       - athena
     ports:
       - "3306:3306"
+    restart: always
 
   athena-monitor:
     container_name: athena-monitor
     image: athena/athena-monitor-linux-amd64:${BRANCH:-main}
     volumes:
-      - ./development-config.yaml:/etc/athena/main.yaml
-    command: /athena-monitor --log.level="debug"
+      - ./creds.yaml:/etc/athena/main.yaml
+      - ./athena-monitor.yaml:/etc/athena/monitor.yaml
+      - ./athena-monitor-directories.yaml:/etc/athena/monitor-directories.yaml
+      - /home/ubuntu/sosreports/tmp:/tmp/athena
+    command: /athena-monitor --config /etc/athena/main.yaml --config /etc/athena/monitor.yaml --config /etc/athena/monitor-directories.yaml --log.level="debug"
     depends_on:
       - nats-streaming
       - db
@@ -47,8 +36,11 @@ services:
     container_name: athena-processor
     image: athena/athena-processor-linux-amd64:${BRANCH:-main}
     volumes:
-      - ./development-config.yaml:/etc/athena/main.yaml
-    command: /athena-processor --config /etc/athena/main.yaml --log.level="debug"
+      - ./creds.yaml:/etc/athena/main.yaml
+      - ./athena-processor.yaml:/etc/athena/processor.yaml
+      - ./athena-processor-upload.yaml:/etc/athena/processor-upload.yaml
+      - /home/ubuntu/sosreports/tmp:/tmp/athena
+    command: /athena-processor --config /etc/athena/main.yaml --config /etc/athena/processor.yaml --config /etc/athena/processor-upload.yaml --log.level="debug"
     depends_on:
       - nats-streaming
       - db

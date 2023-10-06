@@ -31,16 +31,51 @@ The basic flowchart of interaction is as follows
 
 ## Hacking
 
-Everything needed to stand up a development environment is contained under a
-makefile, docker, docker-compose and golang >= 1.14 are required.
+In order to stand up a development environment, you will need
 
-Clone this repository and run the following command to build:
+- `make`
+- `docker`
+- `docker-compose`
+- `golang >= 1.16`
 
-```sh
-make common-build
-```
+For running a docker based installation locally you will need a sandbox account
+on Salesforce and a sandbox directory on files.com. Supply
 
-For running a docker based installation locally
+1. A list of the corresponding credentials in `creds.yaml`,
+
+      ```yaml
+      db:
+        dialect: mysql
+        dsn: "athena:athena@tcp(db:3306)/athena?charset=utf8&parseTime=true"
+
+      filescom:
+        key : "***"
+        endpoint: "https://..."
+
+      salesforce:
+        endpoint: "https://..."
+        username: "***"
+        password: "***"
+        security-token: "***"
+      ```
+
+1. A list of directories to monitor in `athena-monitor-directories.yaml`,
+
+      ```yaml
+      monitor:
+        directories:
+          - "/sandbox/..."
+          - "/sandbox/..."
+      ```
+
+3. A path for where the report uploads will go in `athena-processor-upload.yaml`,
+
+      ```yaml
+      processor:
+        reports-upload-dir: "/sandbox/..."
+      ```
+
+And finally run
 
 ```shell
 make devel
