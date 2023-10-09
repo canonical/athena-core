@@ -1,6 +1,7 @@
 monitor:
   files-delta: 1m
   poll-every: 10s
+  base-tmpdir: "/tmp/athena"
   directories:
     - "/uploads"
     - "/uploads/sosreport"
