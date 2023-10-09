@@ -158,13 +158,15 @@ func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
 			if _, err := os.Stat(basePath); os.IsNotExist(err) {
 				log.Debugf("Temporary base path '%s' doesn't exist - creating", basePath)
 				if err = os.MkdirAll(basePath, 0755); err != nil {
-					log.Errorf("Cannot create temporary base path: %s", err.Error())
+					log.Errorf("Failed to create temporary base path: %s - skipping", err.Error())
+					continue
 				}
 			}
 			log.Debugf("Using temporary base path: %s", basePath)
 			fileEntry, err := m.FilesClient.Download(&file, basePath)
 			if err != nil {
-				log.Errorf("Failed to download %s: %s", file.Path, err)
+				log.Errorf("Failed to download %s: %s - skipping", file.Path, err)
+				continue
 			}
 			log.Infof("Downloaded %s", fileEntry.Path)
 
