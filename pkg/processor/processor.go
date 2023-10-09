@@ -247,11 +247,6 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		return nil, err
 	}
 
-	fileEntry, err := fc.Download(file, dir)
-	if err != nil {
-		return nil, err
-	}
-
 	reportRunner.Config = cfg
 	reportRunner.Subscriber = subscriber
 	reportRunner.Name = name
@@ -262,9 +257,9 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 
 	//TODO: document the template variables
 	tplContext := pongo2.Context{
-		"basedir":  reportRunner.Basedir,                                           // base dir used to generate reports
-		"file":     fileEntry,                                                      // file entry as returned by the files.com api client
-		"filepath": path.Join(reportRunner.Basedir, filepath.Base(fileEntry.Path)), // directory where the file lives on
+		"basedir":  reportRunner.Basedir,                                      // base dir used to generate reports
+		"file":     filepath.Base(file.Path),                                  // file entry as returned by the files.com api client
+		"filepath": path.Join(reportRunner.Basedir, filepath.Base(file.Path)), // directory where the file lives on
 	}
 
 	var scripts = make(map[string]string)
@@ -300,6 +295,12 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 			scripts[scriptName] = fd.Name()
 		}
 
+		log.Infof("Removing previously downloaded file: %s", filepath.Base(file.Path))
+		err = os.Remove(path.Join(basePath, filepath.Base(file.Path)))
+		if err != nil {
+			log.Errorf("Could not remove %s: %s", filepath.Base(file.Path), err.Error())
+		}
+
 		timeout, err := time.ParseDuration(report.Timeout)
 		if err != nil {
 			timeout, _ = time.ParseDuration(DefaultExecutionTimeout)
@@ -311,6 +312,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		reportToExecute.Subscriber = reportRunner.Subscriber
 		reportToExecute.Name = reportName
 		reportToExecute.File = file
+		reportToExecute.FileName = file.Path
 		reportToExecute.Scripts = scripts
 		reportRunner.Reports = append(reportRunner.Reports, reportToExecute)
 	}

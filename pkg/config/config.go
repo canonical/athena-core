@@ -34,6 +34,7 @@ type Config struct {
 		PollEvery    string   `yaml:"poll-every" default:"5"`
 		FilesDelta   string   `yaml:"files-delta" default:"10m"`
 		Filetypes    []string `yaml:"filetypes"`
+		BaseTmpDir   string   `yaml:"base-tmpdir" default:""`
 		Directories  []string `yaml:"directories"`
 		ProcessorMap []struct {
 			Type      string `yaml:"type"`
