@@ -36,7 +36,7 @@ In order to stand up a development environment, you will need
 - `make`
 - `docker`
 - `docker-compose`
-- `golang >= 1.16`
+- `golang >= 1.17`
 
 For running a docker based installation locally you will need a sandbox account
 on Salesforce and a sandbox directory on files.com. Supply
