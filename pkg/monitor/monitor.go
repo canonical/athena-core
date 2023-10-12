@@ -19,12 +19,12 @@ import (
 )
 
 type Monitor struct {
-	Db               *gorm.DB
-	Config           *config.Config
-	FilesClient      common.FilesComClient
-	SalesforceClient common.SalesforceClient
-	Provider         pubsub.Provider
-	mu               *sync.Mutex
+	Db               *gorm.DB                // Database connection
+	Config           *config.Config          // Configuration instance
+	FilesClient      common.FilesComClient   // Files.com client
+	SalesforceClient common.SalesforceClient // SalesForce client
+	Provider         pubsub.Provider         // Messaging provider
+	mu               *sync.Mutex             // A mutex
 }
 
 func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]string, error) {
@@ -121,7 +121,8 @@ func NewMonitor(filesClient common.FilesComClient, salesforceClient common.Sales
 		Db:               dbConn,
 		FilesClient:      filesClient,
 		SalesforceClient: salesforceClient,
-		Config:           cfg, mu: new(sync.Mutex)}, nil
+		Config:           cfg,
+		mu:               new(sync.Mutex)}, nil
 }
 
 func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
