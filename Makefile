@@ -3,9 +3,19 @@ all: lint build test
 
 .PHONY: docker-compose
 docker-compose:
-	docker-compose down --remove-orphans
-	mkdir --parents tmp
-	BRANCH=$(shell git branch --show-current) docker-compose up --force-recreate --build
+	if docker-compose version > /dev/null 2>&1; then \
+		DOCKER_COMPOSE="docker-compose"; \
+	else \
+		if docker compose version > /dev/null 2>&1; then  \
+			DOCKER_COMPOSE="docker compose"; \
+		else \
+			echo "Please install the docker-compose command"; \
+			exit 1; \
+		fi; \
+	fi; \
+	$${DOCKER_COMPOSE} down --remove-orphans; \
+	mkdir --parents tmp; \
+	BRANCH=$(shell git branch --show-current) $${DOCKER_COMPOSE} up --force-recreate --build
 
 .PHONY: devel
 devel:  athena-monitor athena-processor docker-build docker-compose
@@ -16,7 +26,7 @@ docker-build: athena-monitor docker-build-monitor athena-processor docker-build-
 .PHONY: docker-build-monitor docker-build-processor
 docker-build-monitor docker-build-processor: docker-build-%:
 	docker build \
-	    --tag athena/athena-$*-linux-amd64:$(subst /,-,$(shell git rev-parse --abbrev-ref HEAD)) \
+		--tag athena/athena-$*-linux-amd64:$(subst /,-,$(shell git rev-parse --abbrev-ref HEAD)) \
 		--file cmd/$*/Dockerfile \
 		$(if $(NOCACHE),--no-cache,) \
 		--build-arg ARCH=amd64 \
