@@ -152,9 +152,10 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, newReport.FileName)
 	}
 
-	log.Debugf("Uploading script output to files.com")
+	log.Debugf("uploading script output(s) to files.com")
 	for scriptName, output := range scriptOutputs {
 		dst_fname := fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name, scriptName)
+		log.Debugf("uploading script output %s", dst_fname)
 		uploadedFilePath, err := runner.FilescomClient.Upload(string(output), dst_fname)
 		if err != nil {
 			return fmt.Errorf("Failed to upload file '%s': %s", dst_fname, err.Error())
