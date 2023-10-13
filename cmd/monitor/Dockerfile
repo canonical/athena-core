@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 LABEL maintainer="Canonical Sustaining Engineering <edward.hope-morley@canonical.com>"
 LABEL org.opencontainers.image.description "Athena Monitor"
 
-RUN apt update
+RUN apt-get update
 RUN apt-get --yes install \
     bc \
     bsdmainutils \
