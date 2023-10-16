@@ -3,7 +3,6 @@ package processor
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -243,7 +242,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 		}
 	}
 
-	dir, err := ioutil.TempDir(basePath, "athena-report-"+name)
+	dir, err := os.MkdirTemp(basePath, "athena-report-"+name)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +271,7 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 				log.Errorf("No script provided to run on '%s'", scriptName)
 				continue
 			}
-			fd, err := ioutil.TempFile(reportRunner.Basedir, "run-script-")
+			fd, err := os.CreateTemp(reportRunner.Basedir, "run-script-")
 			if err != nil {
 				return nil, err
 			}
