@@ -85,7 +85,7 @@ func RunReport(report *ReportToExecute) (map[string][]byte, error) {
 	var output = make(map[string][]byte)
 
 	for scriptName, script := range report.Scripts {
-		log.Debugf("Running script '%s' on sosreport '%s'", scriptName, report.FileName)
+		log.Debugf("Running script '%s' on sosreport '%s'", scriptName, filepath.Base(report.FileName))
 		var ret []byte
 		var err error
 		if report.Timeout > 0 {
@@ -247,6 +247,13 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("created basedir %s", dir)
+
+	err = os.Rename(filepath.Join(basePath, filepath.Base(file.Path)), filepath.Join(dir, filepath.Base(file.Path)))
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("moved file to %s", dir)
 
 	reportRunner.Config = cfg
 	reportRunner.Subscriber = subscriber
@@ -294,12 +301,6 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 			}
 
 			scripts[scriptName] = fd.Name()
-		}
-
-		log.Infof("Removing previously downloaded file: %s", filepath.Base(file.Path))
-		err = os.Remove(path.Join(basePath, filepath.Base(file.Path)))
-		if err != nil {
-			log.Errorf("Could not remove %s: %s", filepath.Base(file.Path), err.Error())
 		}
 
 		timeout, err := time.ParseDuration(report.Timeout)
