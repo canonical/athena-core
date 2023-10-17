@@ -7,9 +7,9 @@ require (
 	github.com/flosch/pongo2/v4 v4.0.2
 	github.com/go-orm/gorm v0.0.0-20161201081620-eb06255b667d
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/lileio/pubsub/v2 v2.5.0
+	github.com/lileio/pubsub/v2 v2.6.1
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe
-	github.com/nats-io/stan.go v0.8.3
+	github.com/nats-io/stan.go v0.10.4
 	github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.8.3
@@ -30,7 +30,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-hclog v0.14.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
 	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -42,9 +41,8 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/nats-io/nats-server/v2 v2.2.2 // indirect
-	github.com/nats-io/nats-streaming-server v0.21.2 // indirect
-	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d // indirect
+	github.com/nats-io/nats-server/v2 v2.7.4 // indirect
+	github.com/nats-io/nats.go v1.22.1 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492 // indirect
@@ -56,13 +54,14 @@ require (
 	github.com/prometheus/client_golang v1.11.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
-	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/prometheus/procfs v0.7.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/sanity-io/litter v1.2.0 // indirect
 	github.com/segmentio/ksuid v1.0.3 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/zenthangplus/goccm v0.0.0-20200608171100-39e9e08b694a // indirect
 	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/grpc v1.58.2 // indirect
