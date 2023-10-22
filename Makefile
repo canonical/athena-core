@@ -1,8 +1,11 @@
 .PHONY: all
 all: lint build test
 
-.PHONY: docker-compose
-docker-compose:
+.PHONY: devel
+devel:  athena-monitor athena-processor docker-build docker-deploy
+
+.PHONY: docker-deploy
+docker-deploy:
 	if docker-compose version > /dev/null 2>&1; then \
 		DOCKER_COMPOSE="docker-compose"; \
 	else \
@@ -17,9 +20,43 @@ docker-compose:
 	mkdir --parents tmp; \
 	BRANCH=$(shell git branch --show-current) $${DOCKER_COMPOSE} up --force-recreate --build
 
-.PHONY: devel
-devel:  athena-monitor athena-processor docker-build docker-compose
+.PHONY: k8s-deploy
+k8s-deploy:
+	mkdir --parents tmp
 
+.PHONY: k8s
+k8s: db nats configmaps athena
+
+.PHONY: db
+db:
+	kubectl apply \
+		--filename db-deployment.yaml \
+		--filename db-service.yaml
+
+.PHONY: nats
+nats:
+	kubectl apply \
+		--filename nats-streaming-deployment.yaml \
+		--filename nats-streaming-service.yaml
+
+.PHONY: configmaps
+configmaps: athena-configmap-monitor.yaml athena-configmap-processor.yaml athena-secret-credentials.yaml
+
+athena-configmap-%.yaml: athena-%.yaml athena-configmap-%-template.yaml
+	yq eval ".data.[\"$*.yaml\"] = \"$$(cat $<)\"" athena-configmap-$*-template.yaml | tee $@
+
+athena-secret-credentials.yaml:  credentials.yaml athena-secret-credentials-template.yaml
+	yq eval ".stringData.[\"credentials.yaml\"] = \"$$(cat $<)\"" athena-secret-credentials-template.yaml | tee $@
+
+.PHONY: athena
+athena: configmaps
+	kubectl apply \
+		--filename athena-claim.yaml \
+		--filename athena-networkpolicy.yaml \
+		--filename athena-configmap-monitor.yaml \
+		--filename athena-configmap-processor.yaml \
+		--filename athena-secret-credentials.yaml \
+		--filename athena-deployment.yaml
 .PHONY: common-docker monitor processor
 docker-build: athena-monitor docker-build-monitor athena-processor docker-build-processor
 
