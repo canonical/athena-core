@@ -81,7 +81,18 @@ func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.F
 		if err == nil {
 			sfCase, err = m.SalesforceClient.GetCaseByNumber(caseNumber)
 			if err != nil {
-				log.Error(err)
+				// The SalesForce connection possibly died on us. Let's try to
+				// revive it and then try again.
+				log.Warn("Creating new SF client since current one is failing")
+				m.SalesforceClient, err = common.NewSalesforceClient(m.Config)
+				if err != nil {
+					log.Errorf("Failed to reconnect to salesforce: %s", err)
+					panic(err)
+				}
+				sfCase, err = m.SalesforceClient.GetCaseByNumber(caseNumber)
+				if err != nil {
+					log.Error(err)
+				}
 			}
 		} else {
 			log.Warningf("Failed to identify case from filename '%s': %s", file.Path, err)
