@@ -1,6 +1,6 @@
 module github.com/canonical/athena-core
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Files-com/files-sdk-go v1.0.180
