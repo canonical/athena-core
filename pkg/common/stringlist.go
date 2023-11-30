@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
@@ -28,12 +29,18 @@ func StringList(s kingpin.Settings) (target *[]string) {
 	return
 }
 
+type AthenaFormatter struct{}
+
+func (f *AthenaFormatter) Format(entry *log.Entry) ([]byte, error) {
+	return []byte(fmt.Sprintf("%s [%s]: %s\n", entry.Time.Format("2006-01-02 15:04:05"), entry.Level.String(), entry.Message)), nil
+}
+
 func InitLogging(logLevel *string) {
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
 	// Log as JSON instead of the default ASCII formatter.
-	log.SetFormatter(&log.JSONFormatter{})
+	log.SetFormatter(&AthenaFormatter{})
 
 	// Output to stdout instead of the default stderr
 	// Can be any io.Writer, see below for File example
