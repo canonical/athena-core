@@ -121,15 +121,17 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 	log.Infof("Fetching case with number '%s' from Salesforce", caseNumber)
 	sfCase, err := runner.SalesforceClient.GetCaseByNumber(caseNumber)
 	if err != nil {
+		// The SalesForce connection possibly died on us. Let's try to
+		// revive it and then try again.
 		log.Warn("Creating new SF client since current one is failing")
-		client, client_err := common.NewSalesforceClient(runner.Config)
-		if client_err != nil {
-			log.Errorf("Failed to reconnect to salesforce: %s", client_err)
-			return err
+		runner.SalesforceClient, err = common.NewSalesforceClient(runner.Config)
+		if err != nil {
+			log.Errorf("Failed to reconnect to salesforce: %s", err)
+			panic(err)
 		}
-		runner.SalesforceClient = client
 		sfCase, err = runner.SalesforceClient.GetCaseByNumber(caseNumber)
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 	}
