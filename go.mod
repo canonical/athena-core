@@ -11,7 +11,7 @@ require (
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe
 	github.com/nats-io/stan.go v0.10.4
 	github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.3
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v3 v3.0.1
