@@ -9,6 +9,16 @@ import (
 	"github.com/simpleforce/simpleforce"
 )
 
+type ErrNoCaseFound struct {
+	number string
+}
+
+func (e ErrNoCaseFound) Error() string {
+	return fmt.Sprintf("no case found in Salesforce with number '%s'", e.number)
+}
+
+var ErrAuthentication = simpleforce.ErrAuthentication
+
 type SalesforceClient interface {
 	GetCaseByNumber(number string) (*Case, error)
 	PostComment(caseId, body string, isPublic bool) *simpleforce.SObject
@@ -42,6 +52,9 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 	q := "SELECT Id,CaseNumber,AccountId FROM Case WHERE CaseNumber LIKE '%" + number + "%'"
 	result, err := sf.Query(q)
 	if err != nil {
+		if err == simpleforce.ErrAuthentication {
+			return nil, ErrAuthentication
+		}
 		return nil, err
 	}
 
@@ -56,7 +69,7 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 			}, nil
 		}
 	}
-	return nil, fmt.Errorf("No case found in Salesforce with number '%s'", number)
+	return nil, ErrNoCaseFound{number}
 }
 
 func GetCaseNumberFromFilename(filename string) (string, error) {
