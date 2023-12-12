@@ -1,13 +1,25 @@
 package db
 
 import (
+	"fmt"
+
 	"github.com/canonical/athena-core/pkg/config"
-	"github.com/go-orm/gorm"
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func GetDBConn(cfg *config.Config) (*gorm.DB, error) {
-	dbInstance, err := gorm.Open(cfg.Db.Dialect, cfg.Db.DSN)
+	var dBDriver gorm.Dialector = nil
+	switch cfg.Db.Dialect {
+	case "sqlite":
+		dBDriver = sqlite.Open(cfg.Db.DSN)
+	case "mysql":
+		dBDriver = mysql.Open(cfg.Db.DSN)
+	default:
+		return nil, fmt.Errorf("unknown database dialect %s", cfg.Db.Dialect)
+	}
+	dbInstance, err := gorm.Open(dBDriver)
 	if err != nil {
 		return nil, err
 	}

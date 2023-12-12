@@ -10,12 +10,12 @@ import (
 	"github.com/canonical/athena-core/pkg/common"
 	"github.com/canonical/athena-core/pkg/config"
 	"github.com/canonical/athena-core/pkg/processor"
-	"github.com/go-orm/gorm"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/providers/nats"
 	"github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"gorm.io/gorm"
 )
 
 var (
