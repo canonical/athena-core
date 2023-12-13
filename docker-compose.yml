@@ -60,6 +60,14 @@ services:
       - athena
     restart: always
 
+  debug:
+    container_name: debug
+    image: debug-container
+    command: /bin/bash -c 'sleep 10000'
+    networks:
+      - athena
+    restart: always
+
 networks:
   athena:
     driver: bridge
