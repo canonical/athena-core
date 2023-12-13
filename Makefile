@@ -21,7 +21,7 @@ docker-compose:
 devel:  athena-monitor athena-processor docker-build docker-compose
 
 .PHONY: common-docker monitor processor
-docker-build: athena-monitor docker-build-monitor athena-processor docker-build-processor
+docker-build: athena-monitor docker-build-monitor athena-processor docker-build-processor debug-container
 
 .PHONY: docker-build-monitor docker-build-processor
 docker-build-monitor docker-build-processor: docker-build-%:
@@ -31,6 +31,13 @@ docker-build-monitor docker-build-processor: docker-build-%:
 		$(if $(NOCACHE),--no-cache,) \
 		--build-arg ARCH=amd64 \
 		--build-arg OS=linux \
+		.
+
+.PHONY: debug-container
+debug-container:
+	docker build \
+		--tag debug-container \
+		--file Dockerfile-debug \
 		.
 
 .PHONY: build
