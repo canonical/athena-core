@@ -27,7 +27,7 @@ type Subscriber struct {
 
 type Config struct {
 	Db struct {
-		Dialect string `yaml:"dialect" default:"sqlite3"`
+		Dialect string `yaml:"dialect" default:"sqlite"`
 		DSN     string `yaml:"dsn"`
 	} `yaml:"db,omitempty"`
 	Monitor struct {

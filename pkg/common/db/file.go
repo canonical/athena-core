@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/go-orm/gorm"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -10,7 +10,7 @@ type File struct {
 
 	Created    time.Time `gorm:"autoCreateTime"` // Use unix seconds as creating time
 	Dispatched bool      `gorm:"default:false"`
-	Path       string    `gorm:"primary_key"`
+	Path       string    `gorm:"primary_key,size:10240"`
 	Reports    []Report
 }
 

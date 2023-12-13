@@ -15,10 +15,10 @@ import (
 	"github.com/canonical/athena-core/pkg/common/db"
 	"github.com/canonical/athena-core/pkg/config"
 	"github.com/flosch/pongo2/v4"
-	"github.com/go-orm/gorm"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type Processor struct {

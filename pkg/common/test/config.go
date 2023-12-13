@@ -2,7 +2,7 @@ package test
 
 var DefaultTestConfig = `
 db:
-  dialect: mysql
+  dialect: sqlite
   dsn: "athena:athena@tcp(db:3306)/athena?charset=utf8&parseTime=true"
 
 monitor:
