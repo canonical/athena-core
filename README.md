@@ -29,6 +29,38 @@ The basic flowchart of interaction is as follows
 
 [![](https://mermaid.ink/img/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBBW0F0aGVuYSBNb25pdG9yXSAtLT58RmV0Y2ggRmlsZXN8IEIoRmlsZXMuY29tIEFQSSlcbiAgICBCIC0tPiBDe05ldyBmaWxlcyB0byBwcm9jZXNzP31cbiAgICBDIC0tPnxZZXN8IEQoTmF0cyBNZXNzYWdlKVxuICAgIEMgLS0-fE5vfCBBXG4gICAgRCAtLT58RmlsZXBhdGh8RVtBdGhlbmEgUHJvY2Vzc29yXVxuICAgIEVbQXRoZW5hIFByb2Nlc3Nvcl0tLT4gRntQb3N0IGNvbW1lbnQgb24gY2FzZT99XG4gICAgRiAtLT58WWVzfCBHKFNhbGVzZm9yY2UgQVBJKVxuICAgIEYgLS0-fE5vfEFcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJkZWZhdWx0In0sInVwZGF0ZUVkaXRvciI6ZmFsc2V9)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBBW0F0aGVuYSBNb25pdG9yXSAtLT58RmV0Y2ggRmlsZXN8IEIoRmlsZXMuY29tIEFQSSlcbiAgICBCIC0tPiBDe05ldyBmaWxlcyB0byBwcm9jZXNzP31cbiAgICBDIC0tPnxZZXN8IEQoTmF0cyBNZXNzYWdlKVxuICAgIEMgLS0-fE5vfCBBXG4gICAgRCAtLT58RmlsZXBhdGh8RVtBdGhlbmEgUHJvY2Vzc29yXVxuICAgIEVbQXRoZW5hIFByb2Nlc3Nvcl0tLT4gRntQb3N0IGNvbW1lbnQgb24gY2FzZT99XG4gICAgRiAtLT58WWVzfCBHKFNhbGVzZm9yY2UgQVBJKVxuICAgIEYgLS0-fE5vfEFcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJkZWZhdWx0In0sInVwZGF0ZUVkaXRvciI6ZmFsc2V9)
 
+## Configuration
+
+The monitor and the processor can be configured via `yaml` configuration files
+by calling
+
+```console
+athena-monitor --config config.yaml [--config config2.yaml [...]]
+athena-processor --config config.yaml [--config config2.yaml [...]]
+```
+
+where configuration files are loaded in the order they are given on the command
+line and values in later configuration files superseed values read earlier.
+
+The basic structure looks like
+
+```yaml
+monitor:
+  files-delta: 1m
+  poll-every: 10s
+  base-tmpdir: "/tmp/athena"
+  directories:
+    - "/uploads"
+  processor-map:
+    - type: filename
+      regex: ".*sosreport.*.tar.[xz|gz]+$"
+      processor: sosreports
+```
+
+### Monitor Configuration
+
+### Processor Configuration
+
 ## Hacking
 
 In order to stand up a development environment, you will need
