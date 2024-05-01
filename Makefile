@@ -15,7 +15,7 @@ docker-compose:
 	fi; \
 	$${DOCKER_COMPOSE} down --remove-orphans; \
 	mkdir --parents tmp; \
-	BRANCH=$(shell git branch --show-current) $${DOCKER_COMPOSE} up --force-recreate --build
+	BRANCH=$(shell git branch --show-current | sed -e 's:/:-:g') $${DOCKER_COMPOSE} up --force-recreate --build
 
 .PHONY: devel
 devel:  athena-monitor athena-processor docker-build docker-compose
