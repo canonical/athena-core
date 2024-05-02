@@ -1,5 +1,5 @@
 processor:
-  batch-comments-every: 5m
+  batch-comments-every: 1m
   base-tmpdir: "/tmp/athena"
   subscribers:
     sosreports:
