@@ -35,7 +35,7 @@ processor:
                 #!/bin/bash
                 pip3 install hotsos --upgrade &>/dev/null
                 tar -xf {{filepath}} -C {{basedir}} &>/dev/null
-                hotsos -s --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                hotsos --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
                 if [ -s hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml ]; then
                   cat hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml
                 else
@@ -49,16 +49,9 @@ processor:
                 #!/bin/bash
                 pip3 install hotsos --upgrade &>/dev/null
                 tar -xf {{filepath}} -C {{basedir}} &>/dev/null
-                hotsos -s --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
-                # check on size of output and use very-short if exceeds SF comment limit
+                hotsos --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
                 if [ -s hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml ]; then
-                  # SF comment limit is ~4K but leave some space for headers
-                  if (($(wc -m hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml| cut -d ' ' -f 1) > 1000)); then
-                    echo "NOTE: using --very-short since output exceeds SF comment char limit - check full summary for issue details."
-                    cat hotsos-out/*/summary/very_short/yaml/hotsos-summary.all.yaml
-                  else
-                    cat hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml
-                  fi
+                  cat hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml
                 else
                   echo "No known bugs or issues found on sosreport."
                 fi
