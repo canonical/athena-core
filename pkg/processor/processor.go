@@ -153,10 +153,10 @@ func (runner *ReportRunner) UploadAndSaveReport(report *ReportToExecute, caseNum
 		uploadPath = path.Join(runner.Config.Processor.ReportsUploadPath, newReport.FileName)
 	}
 
-	log.Debugf("uploading script output(s) to files.com")
+	log.Debugf("Uploading script output(s) to files.com")
 	for scriptName, output := range scriptOutputs {
 		dst_fname := fmt.Sprintf(DefaultReportOutputFormat, uploadPath, report.Name, scriptName)
-		log.Debugf("uploading script output %s", dst_fname)
+		log.Debugf("Uploading script output %s", dst_fname)
 		uploadedFilePath, err := runner.FilescomClient.Upload(string(output), dst_fname)
 		if err != nil {
 			return fmt.Errorf("Failed to upload file '%s': %s", dst_fname, err.Error())
@@ -248,13 +248,13 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf("created basedir %s", dir)
+	log.Debugf("Created basedir %s", dir)
 
 	err = os.Rename(filepath.Join(basePath, filepath.Base(file.Path)), filepath.Join(dir, filepath.Base(file.Path)))
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf("moved file to %s", dir)
+	log.Debugf("Moved file to %s", dir)
 
 	reportRunner.Config = cfg
 	reportRunner.Subscriber = subscriber
@@ -412,7 +412,7 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 
 	log.Infof("Running process to send batched comments to salesforce every %s", interval)
 	if results := p.Db.Preload("Scripts").Where("created <= ? and commented = ?", time.Now().Add(-interval), false).Find(&reports); results.Error != nil {
-		log.Errorf("error getting batched comments: %s", results.Error)
+		log.Errorf("Error getting batched comments: %s", results.Error)
 		return
 	}
 
