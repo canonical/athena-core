@@ -188,7 +188,7 @@ func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
 				log.Errorf("Cannot dispatch file: %s to processor, error: %s", file.Path, err)
 			} else {
 				file.Dispatched = true
-				log.Debugf("file: %s -- flagged as dispatched", file.Path)
+				log.Debugf("File: %s -- flagged as dispatched", file.Path)
 			}
 			m.Db.Save(file)
 		}
