@@ -25,39 +25,83 @@ type Subscriber struct {
 	Reports           map[string]Report `yaml:"reports"`
 }
 
+type Db struct {
+	Dialect string `yaml:"dialect" default:"sqlite"`
+	DSN     string `yaml:"dsn"`
+}
+
+func NewDb() Db {
+	return Db{
+		Dialect: "sqlite",
+	}
+}
+
+type Monitor struct {
+	PollEvery    string   `yaml:"poll-every"`
+	FilesDelta   string   `yaml:"files-delta"`
+	Filetypes    []string `yaml:"filetypes"`
+	BaseTmpDir   string   `yaml:"base-tmpdir"`
+	Directories  []string `yaml:"directories"`
+	ProcessorMap []struct {
+		Type      string `yaml:"type"`
+		Regex     string `yaml:"regex"`
+		Processor string `yaml:"processor"`
+	} `yaml:"processor-map"`
+}
+
+func NewMonitor() Monitor {
+	return Monitor{
+		PollEvery:  "5",
+		FilesDelta: "10m",
+	}
+}
+
+type Processor struct {
+	ReportsUploadPath  string                `yaml:"reports-upload-dir"`
+	BatchCommentsEvery string                `yaml:"batch-comments-every"`
+	BaseTmpDir         string                `yaml:"base-tmpdir"`
+	SubscribeTo        map[string]Subscriber `yaml:"subscribers,omitempty"`
+}
+
+func NewProcessor() Processor {
+	return Processor{
+		ReportsUploadPath:  "/customers/athena-reports/",
+		BatchCommentsEvery: "10m",
+	}
+}
+
+type SalesForce struct {
+	Endpoint         string `yaml:"endpoint"`
+	Username         string `yaml:"username"`
+	Password         string `yaml:"password"`
+	SecurityToken    string `yaml:"security-token"`
+	MaxCommentLength int    `yaml:"max-comment-length"`
+}
+
+func NewSalesForce() SalesForce {
+	return SalesForce{
+		MaxCommentLength: 4000 - 1000, // A very conservative buffer of max length per Salesforce comment (4000) without header text for comments
+	}
+}
+
 type Config struct {
-	Db struct {
-		Dialect string `yaml:"dialect" default:"sqlite"`
-		DSN     string `yaml:"dsn"`
-	} `yaml:"db,omitempty"`
-	Monitor struct {
-		PollEvery    string   `yaml:"poll-every" default:"5"`
-		FilesDelta   string   `yaml:"files-delta" default:"10m"`
-		Filetypes    []string `yaml:"filetypes"`
-		BaseTmpDir   string   `yaml:"base-tmpdir" default:""`
-		Directories  []string `yaml:"directories"`
-		ProcessorMap []struct {
-			Type      string `yaml:"type"`
-			Regex     string `yaml:"regex"`
-			Processor string `yaml:"processor"`
-		} `yaml:"processor-map"`
-	} `yaml:"monitor,omitempty"`
-	Processor struct {
-		ReportsUploadPath  string                `yaml:"reports-upload-dir" default:"/customers/athena-reports/"`
-		BatchCommentsEvery string                `yaml:"batch-comments-every" default:"10m"`
-		BaseTmpDir         string                `yaml:"base-tmpdir" default:""`
-		SubscribeTo        map[string]Subscriber `yaml:"subscribers,omitempty"`
-	} `yaml:"processor,omitempty"`
-	Salesforce struct {
-		Endpoint      string `yaml:"endpoint"`
-		Username      string `yaml:"username"`
-		Password      string `yaml:"password"`
-		SecurityToken string `yaml:"security-token"`
-	} `yaml:"salesforce,omitempty"`
-	FilesCom struct {
+	Db         Db         `yaml:"db,omitempty"`
+	Monitor    Monitor    `yaml:"monitor,omitempty"`
+	Processor  Processor  `yaml:"processor,omitempty"`
+	Salesforce SalesForce `yaml:"salesforce,omitempty"`
+	FilesCom   struct {
 		Key      string `yaml:"key"`
 		Endpoint string `yaml:"endpoint"`
 	} `yaml:"filescom,omitempty"`
+}
+
+func NewConfig() Config {
+	return Config{
+		Db:         NewDb(),
+		Monitor:    NewMonitor(),
+		Processor:  NewProcessor(),
+		Salesforce: NewSalesForce(),
+	}
 }
 
 func (cfg *Config) String() string {
@@ -74,7 +118,7 @@ func (cfg *Config) String() string {
 }
 
 func NewConfigFromFile(filePaths []string) (*Config, error) {
-	var config Config
+	var config Config = NewConfig()
 
 	s := snuffler.New(&config)
 	for _, filepath := range filePaths {

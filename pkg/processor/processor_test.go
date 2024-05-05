@@ -3,6 +3,10 @@ package processor
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"testing"
+	"time"
+
 	"github.com/canonical/athena-core/pkg/common"
 	"github.com/canonical/athena-core/pkg/common/db"
 	"github.com/canonical/athena-core/pkg/common/test"
@@ -15,9 +19,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"io/ioutil"
-	"testing"
-	"time"
 )
 
 type ProcessorTestSuite struct {
@@ -88,4 +89,29 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 
 func TestNewProcessor(t *testing.T) {
 	suite.Run(t, &ProcessorTestSuite{})
+}
+
+func TestSplitComment(t *testing.T) {
+	var inputs []string = []string{
+		"123456789\n",
+		"1234\n567890\n123\n",
+		"1234567890123456789",
+	}
+	var expected [][]string = [][]string{
+		{
+			"123456789\n",
+		},
+		{
+			"1234\n567890",
+			"123",
+		},
+		{
+			"1234567890123456789",
+		},
+	}
+	var got []string = []string{}
+	for i, input := range inputs {
+		got = splitComment(input, 12)
+		assert.Equal(t, expected[i], got)
+	}
 }

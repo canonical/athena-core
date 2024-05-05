@@ -351,13 +351,15 @@ const defaultHandlerDeadline = 10 * time.Minute
 
 func NewBaseSubscriber(filesClient common.FilesComClient, salesforceClient common.SalesforceClient,
 	name, topic string, reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) *BaseSubscriber {
-	var subscriber = BaseSubscriber{Options: pubsub.HandlerOptions{
-		Topic:    topic,
-		Name:     "athena-processor-" + name,
-		AutoAck:  false,
-		JSON:     true,
-		Deadline: defaultHandlerDeadline,
-	}, Reports: reports}
+	var subscriber = BaseSubscriber{
+		Options: pubsub.HandlerOptions{
+			Topic:    topic,
+			Name:     "athena-processor-" + name,
+			AutoAck:  false,
+			JSON:     true,
+			Deadline: defaultHandlerDeadline,
+		}, Reports: reports,
+	}
 
 	subscriber.FilesComClient = filesClient
 	subscriber.SalesforceClient = salesforceClient
@@ -405,6 +407,36 @@ func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {
 }
 
 var reportMap map[string]map[string]map[string][]db.Report
+
+// splitComment splits the given comment into several pieces at most
+// maxLength characters long.
+// The function returns the resulting slice.
+func splitComment(comment string, maxLength int) []string {
+	// Check length and split across MaxCommentLength character
+	// boundaries.
+	if len(comment) > maxLength {
+		log.Infof("Comment exceeds %d characters; splitting", maxLength)
+		var commentChunks []string = []string{}
+		commentLines := strings.Split(strings.TrimRight(comment, "\n "), "\n")
+		chunk := []string{}
+		chunkLength := 0
+		for _, line := range commentLines {
+			if chunkLength+len(line) < maxLength || len(chunk) == 0 {
+				chunkLength += len(line) + 1 // Account for newline
+				chunk = append(chunk, line)
+			} else {
+				commentChunks = append(commentChunks, strings.Join(chunk, "\n"))
+				chunkLength = len(line) + 1 // Account for newline
+				chunk = []string{line}
+			}
+		}
+		commentChunks = append(commentChunks, strings.Join(chunk, "\n"))
+		log.Infof("Comment was split into %d chunks", len(commentChunks))
+		return commentChunks
+	} else {
+		return []string{comment}
+	}
+}
 
 func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.Duration) {
 	var reports []db.Report
@@ -467,10 +499,20 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 					continue
 				}
 
-				comment := p.SalesforceClient.PostComment(caseId, renderedComment, subscriber.SFCommentIsPublic)
-				if comment == nil {
-					log.Errorf("Failed to post comment to case id: %s", caseId)
-					continue
+				log.Infof("Processing comment for case %s", caseId)
+				commentChunks := splitComment(renderedComment, p.Config.Salesforce.MaxCommentLength)
+
+				for i, chunk := range commentChunks {
+					var chunkHeader string
+					if len(commentChunks) > 1 {
+						chunkHeader = fmt.Sprintf("Split comment %d of %d\n\n", i+1, len(commentChunks))
+					}
+					comment := p.SalesforceClient.PostComment(caseId,
+						chunkHeader+chunk, subscriber.SFCommentIsPublic)
+					if comment == nil {
+						log.Errorf("Failed to post comment to case id: %s", caseId)
+						continue
+					}
 				}
 
 				log.Infof("Successfully posted comment on case %s for %d reports", caseId, len(reports))
