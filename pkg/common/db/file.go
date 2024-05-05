@@ -1,8 +1,9 @@
 package db
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type File struct {
@@ -31,7 +32,7 @@ type Report struct {
 type Script struct {
 	gorm.Model
 
-	Output         string `gorm:"type:text"`
+	Output         string `gorm:"type:longtext"`
 	Name           string
 	UploadLocation string
 	ReportID       uint
