@@ -75,7 +75,7 @@ jobs:
         id: monitor_meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/athena-monitor
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/athena-monitor
 
       - name: Build and publish Docker - monitor
         id: monitor_build-and-push
