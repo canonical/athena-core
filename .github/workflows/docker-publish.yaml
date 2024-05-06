@@ -13,6 +13,7 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: ${{ github.repository }}
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || 'unpublished' }}
 
 jobs:
   build:
@@ -58,7 +59,7 @@ jobs:
         id: processor_meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/athena-processor
+          images: ${{ env.DOCKERHUB_USERNAME }}/athena-processor
 
       - name: Build and publish Docker - processor
         id: processor-build-and-push
@@ -75,7 +76,7 @@ jobs:
         id: monitor_meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/athena-monitor
+          images: ${{ env.DOCKERHUB_USERNAME }}/athena-monitor
 
       - name: Build and publish Docker - monitor
         id: monitor_build-and-push
