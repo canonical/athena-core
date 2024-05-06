@@ -45,11 +45,11 @@ build: athena-monitor athena-processor
 
 .PHONY: athena-monitor
 athena-monitor:
-	go build -v -o $@ cmd/monitor/main.go
+	go build -v -o $@ -ldflags="-X main.commit=$$(git describe --tags)" cmd/monitor/main.go
 
 .PHONY: athena-processor
 athena-processor:
-	go build -v -o $@ cmd/processor/main.go
+	go build -v -o $@ -ldflags="-X main.commit=$$(git describe --tags)" cmd/processor/main.go
 
 .PHONY: lint
 lint: check_modules gofmt

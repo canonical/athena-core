@@ -21,6 +21,7 @@ var (
 	logLevel = kingpin.Flag("log.level", "Log level: [debug, info, warn, error, fatal]").Default("info").String()
 	configs  = common.StringList(kingpin.Flag("config", "Path to the athena configuration file").Default("/etc/athena/main.yaml").Short('c'))
 	natsUrl  = kingpin.Flag("nats-url", "URL of the nats service").Default("nats://nats-streaming:4222").String()
+	commit   string
 )
 
 func init() {
@@ -33,6 +34,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Infof("Starting athena-monitor (%s)", commit)
 	log.Debug("Configuration")
 	for _, line := range strings.Split(cfg.String(), "\n") {
 		log.Debug(line)
