@@ -58,7 +58,7 @@ jobs:
         id: processor_meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/athena-processor
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/athena-processor
 
       - name: Build and publish Docker - processor
         id: processor-build-and-push
