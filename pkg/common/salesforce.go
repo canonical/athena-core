@@ -22,6 +22,8 @@ var ErrAuthentication = simpleforce.ErrAuthentication
 type SalesforceClient interface {
 	GetCaseByNumber(number string) (*Case, error)
 	PostComment(caseId, body string, isPublic bool) *simpleforce.SObject
+	Query(query string) (*simpleforce.QueryResult, error)
+	SObject(objectName ...string) *simpleforce.SObject
 }
 
 type BaseSalesforceClient struct {
