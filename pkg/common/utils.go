@@ -7,7 +7,7 @@ import (
 )
 
 func RunOnInterval(ctx context.Context, lock *sync.Mutex, d time.Duration, f func(ctx *context.Context, interval time.Duration)) {
-	ticker := time.Tick(d) // nolint:staticcheck
+	ticker := time.Tick(d)
 	for {
 		select {
 		case <-ctx.Done():
