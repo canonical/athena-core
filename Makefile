@@ -41,7 +41,7 @@ debug-container:
 		.
 
 .PHONY: build
-build: athena-monitor athena-processor
+build: athena-monitor athena-processor salesforce-test
 
 .PHONY: athena-monitor
 athena-monitor:
@@ -50,6 +50,10 @@ athena-monitor:
 .PHONY: athena-processor
 athena-processor:
 	go build -v -o $@ -ldflags="-X main.commit=$$(git describe --tags)" cmd/processor/main.go
+
+.PHONY: salesforce-test
+salesforce-test:
+	go build -v -o $@ -ldflags="-X main.commit=$$(git describe --tags)" cmd/salesforce-test/main.go
 
 .PHONY: lint
 lint: check_modules gofmt
