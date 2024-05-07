@@ -1,5 +1,6 @@
-*.db
 .idea*
-vendor/*
+*.db
 data/*
 example-config.yaml
+tmp/*
+vendor/*
