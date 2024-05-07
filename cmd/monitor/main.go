@@ -29,7 +29,6 @@ func init() {
 }
 
 func main() {
-
 	cfg, err := config.NewConfigFromFile(*configs)
 	if err != nil {
 		panic(err)

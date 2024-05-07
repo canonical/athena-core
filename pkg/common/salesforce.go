@@ -22,6 +22,7 @@ var ErrAuthentication = simpleforce.ErrAuthentication
 type SalesforceClient interface {
 	GetCaseByNumber(number string) (*Case, error)
 	PostComment(caseId, body string, isPublic bool) *simpleforce.SObject
+	PostChatter(caseId, body string, isPublic bool) *simpleforce.SObject
 	Query(query string) (*simpleforce.QueryResult, error)
 	SObject(objectName ...string) *simpleforce.SObject
 }
@@ -40,14 +41,6 @@ func NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
 
 type Case struct {
 	Id, CaseNumber, AccountId, Customer string
-}
-
-func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) *simpleforce.SObject {
-	return sf.SObject("CaseComment").
-		Set("ParentId", caseId).
-		Set("CommentBody", html.UnescapeString(body)).
-		Set("IsPublished", isPublic).
-		Create()
 }
 
 func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
@@ -72,6 +65,26 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 		}
 	}
 	return nil, ErrNoCaseFound{number}
+}
+
+func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) *simpleforce.SObject {
+	return sf.SObject("CaseComment").
+		Set("ParentId", caseId).
+		Set("CommentBody", html.UnescapeString(body)).
+		Set("IsPublished", isPublic).
+		Create()
+}
+
+func (sf *BaseSalesforceClient) PostChatter(caseId, body string, isPublic bool) *simpleforce.SObject {
+	visibility := "InternalUsers"
+	if isPublic {
+		visibility = "AllUsers"
+	}
+	return sf.SObject("FeedItem").
+		Set("ParentId", caseId).
+		Set("Body", body).
+		Set("Visibility", visibility).
+		Create()
 }
 
 func GetCaseNumberFromFilename(filename string) (string, error) {

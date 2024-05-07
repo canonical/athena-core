@@ -76,11 +76,13 @@ type SalesForce struct {
 	Password         string `yaml:"password"`
 	SecurityToken    string `yaml:"security-token"`
 	MaxCommentLength int    `yaml:"max-comment-length"`
+	EnableChatter    bool   `yaml:"enable-chatter"`
 }
 
 func NewSalesForce() SalesForce {
 	return SalesForce{
 		MaxCommentLength: 4000 - 1000, // A very conservative buffer of max length per Salesforce comment (4000) without header text for comments
+		EnableChatter:    false,
 	}
 }
 
@@ -129,8 +131,8 @@ func NewConfigFromFile(filePaths []string) (*Config, error) {
 
 	if err := s.Snuffle(); err != nil {
 		return nil, err
-
 	}
+
 	return &config, nil
 }
 
