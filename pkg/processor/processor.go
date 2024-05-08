@@ -17,6 +17,7 @@ import (
 	"github.com/flosch/pongo2/v4"
 	"github.com/lileio/pubsub/v2"
 	"github.com/lileio/pubsub/v2/middleware/defaults"
+	"github.com/simpleforce/simpleforce"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -455,7 +456,7 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 		return
 	}
 
-	log.Infof("Found %d reports to be sent to salesforce", len(reports))
+	log.Infof("Found %d reports to be sent to Salesforce", len(reports))
 	for _, report := range reports {
 		if reportMap[report.Subscriber] == nil {
 			reportMap[report.Subscriber] = make(map[string]map[string][]db.Report)
@@ -507,8 +508,14 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 					if len(commentChunks) > 1 {
 						chunkHeader = fmt.Sprintf("Split comment %d of %d\n\n", i+1, len(commentChunks))
 					}
-					comment := p.SalesforceClient.PostComment(caseId,
-						chunkHeader+chunk, subscriber.SFCommentIsPublic)
+					var comment *simpleforce.SObject
+					if p.Config.Salesforce.EnableChatter {
+						comment = p.SalesforceClient.PostChatter(caseId,
+							chunkHeader+chunk, subscriber.SFCommentIsPublic)
+					} else {
+						comment = p.SalesforceClient.PostComment(caseId,
+							chunkHeader+chunk, subscriber.SFCommentIsPublic)
+					}
 					if comment == nil {
 						log.Errorf("Failed to post comment to case id: %s", caseId)
 						continue

@@ -88,6 +88,10 @@ func TestNewSalesforce(t *testing.T) {
 	if salesforce.MaxCommentLength != 3000 {
 		t.Errorf("Expected MaxCommentLength to be 3000, got '%d'", salesforce.MaxCommentLength)
 	}
+
+	if salesforce.EnableChatter {
+		t.Errorf("Expected EnableChatter to be false, got true")
+	}
 }
 
 func TestNewConfigFromFile(t *testing.T) {
