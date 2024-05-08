@@ -1,15 +1,16 @@
 package common
 
 import (
+	"path"
+	"path/filepath"
+	"strings"
+	"time"
+
 	filessdk "github.com/Files-com/files-sdk-go"
 	"github.com/Files-com/files-sdk-go/file"
 	"github.com/Files-com/files-sdk-go/folder"
 	"github.com/canonical/athena-core/pkg/common/db"
 	log "github.com/sirupsen/logrus"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 const DefaultFilesAgeDelta = 10 * time.Second
@@ -28,7 +29,8 @@ type BaseFilesComClient struct {
 func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*filessdk.File, error) {
 	log.Infof("Uploading to '%s'", destinationPath)
 	data := strings.NewReader(contents)
-	fileEntry, err := client.ApiClient.Upload(data, filessdk.FileActionBeginUploadParams{Path: destinationPath}, &file.UploadProgress{})
+	size := int64(data.Len())
+	fileEntry, err := client.ApiClient.Upload(data, size, filessdk.FileActionBeginUploadParams{Path: destinationPath}, &file.UploadProgress{})
 	if err != nil {
 		return nil, err
 	}

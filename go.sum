@@ -50,8 +50,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DataDog/datadog-go v2.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
-github.com/Files-com/files-sdk-go v1.0.180 h1:eDB5bOfOo6kZuuDVf8+oa3SSpTfBjIjSt0NBxgckQzE=
-github.com/Files-com/files-sdk-go v1.0.180/go.mod h1:zsymEI/Rl383ZWRM/hs8DWmyhhMOKOayycVQs+3ZFEA=
+github.com/Files-com/files-sdk-go v1.0.183 h1:c4Ts8d+tMZgsDyxiukXUOTiplotNRL3wYqv1KfhgpG4=
+github.com/Files-com/files-sdk-go v1.0.183/go.mod h1:zsymEI/Rl383ZWRM/hs8DWmyhhMOKOayycVQs+3ZFEA=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
