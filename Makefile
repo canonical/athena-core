@@ -55,6 +55,10 @@ athena-processor:
 salesforce-test:
 	go build -v -o $@ -ldflags="-X main.commit=$$(git describe --tags)" cmd/salesforce-test/main.go
 
+.PHONY: files.com-test
+files.com-test:
+	go build -v -o $@ -ldflags="-X main.commit=$$(git describe --tags)" cmd/files.com-test/main.go
+
 .PHONY: lint
 lint: check_modules gofmt
 
