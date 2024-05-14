@@ -8,7 +8,7 @@ require (
 	github.com/lileio/pubsub/v2 v2.6.1
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe
 	github.com/nats-io/stan.go v0.10.4
-	github.com/simpleforce/simpleforce v0.0.0-20211207104336-af9d9a281fea
+	github.com/simpleforce/simpleforce v0.0.0-20220429021116-acf4ac67ef68
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.3
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
