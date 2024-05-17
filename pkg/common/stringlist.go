@@ -2,10 +2,11 @@ package common
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type stringList []string
@@ -35,10 +36,12 @@ func (f *AthenaFormatter) Format(entry *log.Entry) ([]byte, error) {
 	return []byte(fmt.Sprintf("%s [%s]: %s\n", entry.Time.Format("2006-01-02 15:04:05"), entry.Level.String(), entry.Message)), nil
 }
 
-func InitLogging(logLevel *string) {
+func ParseCommandline() {
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
+}
 
+func InitLogging(logLevel *string) {
 	// Log as JSON instead of the default ASCII formatter.
 	log.SetFormatter(&AthenaFormatter{})
 

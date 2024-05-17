@@ -25,6 +25,7 @@ var (
 )
 
 func init() {
+	common.ParseCommandline()
 	common.InitLogging(logLevel)
 }
 
