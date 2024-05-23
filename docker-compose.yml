@@ -17,7 +17,7 @@ services:
 
   athena-monitor:
     container_name: athena-monitor
-    image: athena/athena-monitor-linux-amd64:${BRANCH:-main}
+    image: ghcr.io/canonical/athena-core/athena-monitor:${BRANCH:-main}
     volumes:
       - ./creds.yaml:/etc/athena/main.yaml
       - ./athena-monitor.yaml:/etc/athena/monitor.yaml
@@ -33,7 +33,7 @@ services:
 
   athena-processor:
     container_name: athena-processor
-    image: athena/athena-processor-linux-amd64:${BRANCH:-main}
+    image: ghcr.io/canonical/athena-core/athena-processor:${BRANCH:-main}
     volumes:
       - ./creds.yaml:/etc/athena/main.yaml
       - ./athena-processor.yaml:/etc/athena/processor.yaml
