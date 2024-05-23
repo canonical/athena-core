@@ -3,7 +3,7 @@ module github.com/canonical/athena-core
 go 1.22
 
 require (
-	github.com/Files-com/files-sdk-go v1.1.1145
+	github.com/Files-com/files-sdk-go v1.2.1218
 	github.com/flosch/pongo2/v4 v4.0.2
 	github.com/lileio/pubsub/v2 v2.6.1
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe

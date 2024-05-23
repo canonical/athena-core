@@ -38,10 +38,7 @@ func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*fil
 		return nil, err
 	}
 	defer os.Remove(tmpfile.Name())
-	status, err := client.ApiClient.UploadFile(context.Background(), &file.UploadParams{Source: tmpfile.Name(), Destination: destinationPath})
-	if err != nil {
-		return nil, err
-	}
+	status := client.ApiClient.UploadFile(context.Background(), &file.UploadParams{Source: tmpfile.Name(), Destination: destinationPath})
 	return &status.Files()[0], nil
 }
 
