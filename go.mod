@@ -3,7 +3,7 @@ module github.com/canonical/athena-core
 go 1.22
 
 require (
-	github.com/Files-com/files-sdk-go v1.0.183
+	github.com/Files-com/files-sdk-go v1.0.1139
 	github.com/flosch/pongo2/v4 v4.0.2
 	github.com/lileio/pubsub/v2 v2.6.1
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe
@@ -30,15 +30,14 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.6 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lileio/logr v1.1.0 // indirect
 	github.com/lpar/date v1.0.0 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/nats-io/nats-server/v2 v2.9.23 // indirect
@@ -56,13 +55,14 @@ require (
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.7.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
+	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f // indirect
 	github.com/sanity-io/litter v1.2.0 // indirect
 	github.com/segmentio/ksuid v1.0.3 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/zenthangplus/goccm v0.0.0-20200608171100-39e9e08b694a // indirect
+	github.com/zenthangplus/goccm v1.1.3 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 	google.golang.org/grpc v1.58.3 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
