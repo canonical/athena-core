@@ -3,7 +3,7 @@ module github.com/canonical/athena-core
 go 1.22
 
 require (
-	github.com/Files-com/files-sdk-go v1.0.1139
+	github.com/Files-com/files-sdk-go v1.1.1145
 	github.com/flosch/pongo2/v4 v4.0.2
 	github.com/lileio/pubsub/v2 v2.6.1
 	github.com/makyo/snuffler v0.0.0-20190210075944-33446730a4fe
@@ -25,6 +25,7 @@ require (
 	github.com/appscode/go-querystring v0.0.0-20170504095604-0126cfb3f1dc // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/chilts/sid v0.0.0-20190607042430-660e94789ec9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dropbox/godropbox v0.0.0-20200228041828-52ad444d3502 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
