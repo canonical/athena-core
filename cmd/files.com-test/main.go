@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	files_sdk "github.com/Files-com/files-sdk-go"
+	"github.com/Files-com/files-sdk-go/file"
 	"github.com/Files-com/files-sdk-go/folder"
 	"github.com/canonical/athena-core/pkg/common"
 	"github.com/canonical/athena-core/pkg/config"
@@ -16,6 +19,7 @@ var configs = common.StringList(
 )
 
 var path = kingpin.Flag("path", "Path to check").Default("/").String()
+var uploadFile = kingpin.Flag("upload", "File to upload to path").String()
 
 func main() {
 	kingpin.HelpFlag.Short('h')
@@ -31,8 +35,18 @@ func main() {
 		Endpoint: cfg.FilesCom.Endpoint,
 	}
 
+	if *uploadFile != "" {
+		filename := filepath.Base(*uploadFile)
+		fileClient := file.Client{Config: filesConfig}
+		status, err := fileClient.UploadFile(context.Background(), &file.UploadParams{Source: *uploadFile, Destination: filepath.Join(*path, filename)})
+		if err != nil {
+			fmt.Printf("Error uploading file %s: %s", *uploadFile, err)
+		}
+		fmt.Println(status.Files())
+	}
+
 	folderClient := folder.Client{Config: filesConfig}
-	folderIterator, err := folderClient.ListFor(files_sdk.FolderListForParams{Path: *path})
+	folderIterator, err := folderClient.ListFor(context.Background(), files_sdk.FolderListForParams{Path: *path})
 	if err != nil {
 		fmt.Printf("Error reading folder: %s", err)
 		os.Exit(1)

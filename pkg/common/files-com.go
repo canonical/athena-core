@@ -1,9 +1,10 @@
 package common
 
 import (
+	"context"
+	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	filessdk "github.com/Files-com/files-sdk-go"
@@ -28,18 +29,25 @@ type BaseFilesComClient struct {
 
 func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*filessdk.File, error) {
 	log.Infof("Uploading to '%s'", destinationPath)
-	data := strings.NewReader(contents)
-	size := int64(data.Len())
-	fileEntry, err := client.ApiClient.Upload(data, size, filessdk.FileActionBeginUploadParams{Path: destinationPath}, &file.UploadProgress{})
+	tmpfile, err := os.CreateTemp("", "upload")
 	if err != nil {
 		return nil, err
 	}
-	return &fileEntry, nil
+	err = os.WriteFile(tmpfile.Name(), []byte(contents), 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tmpfile.Name())
+	status, err := client.ApiClient.UploadFile(context.Background(), &file.UploadParams{Source: tmpfile.Name(), Destination: destinationPath})
+	if err != nil {
+		return nil, err
+	}
+	return &status.Files()[0], nil
 }
 
 func (client *BaseFilesComClient) Download(toDownload *db.File, downloadPath string) (*filessdk.File, error) {
 	log.Infof("Downloading '%s' to '%s'", toDownload.Path, downloadPath)
-	fileEntry, err := client.ApiClient.DownloadToFile(filessdk.FileDownloadParams{Path: toDownload.Path}, path.Join(downloadPath, filepath.Base(toDownload.Path)))
+	fileEntry, err := client.ApiClient.DownloadToFile(context.Background(), filessdk.FileDownloadParams{Path: toDownload.Path}, path.Join(downloadPath, filepath.Base(toDownload.Path)))
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +61,7 @@ func (client *BaseFilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 	for _, directory := range dirs {
 		log.Infof("Listing files available on %s", directory)
 		params := filessdk.FolderListForParams{Path: directory}
-		it, err := newClient.ListFor(params)
+		it, err := newClient.ListFor(context.Background(), params)
 		if err != nil {
 			return nil, err
 		}
