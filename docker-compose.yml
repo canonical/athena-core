@@ -17,13 +17,17 @@ services:
 
   athena-monitor:
     container_name: athena-monitor
-    image: athena/athena-monitor-linux-amd64:${BRANCH:-main}
+    image: ghcr.io/canonical/athena-core/athena-monitor:${BRANCH:-main}
     volumes:
       - ./creds.yaml:/etc/athena/main.yaml
       - ./athena-monitor.yaml:/etc/athena/monitor.yaml
       - ./athena-monitor-directories.yaml:/etc/athena/monitor-directories.yaml
       - ./tmp:/tmp/athena
-    command: /athena-monitor --config /etc/athena/main.yaml --config /etc/athena/monitor.yaml --config /etc/athena/monitor-directories.yaml --log.level="debug"
+    environment:
+      http_proxy: http://proxy.internal:3128
+      https_proxy: http://proxy.internal:3128
+      no_proxy: canonical--obiwan.sandbox.my.salesforce.com
+    command: /athena-monitor --config /etc/athena/main.yaml --config /etc/athena/monitor.yaml --config /etc/athena/monitor-directories.yaml --log.level=debug
     depends_on:
       - nats-streaming
       - db
@@ -33,12 +37,16 @@ services:
 
   athena-processor:
     container_name: athena-processor
-    image: athena/athena-processor-linux-amd64:${BRANCH:-main}
+    image: ghcr.io/canonical/athena-core/athena-processor:${BRANCH:-main}
     volumes:
       - ./creds.yaml:/etc/athena/main.yaml
       - ./athena-processor.yaml:/etc/athena/processor.yaml
       - ./athena-processor-upload.yaml:/etc/athena/processor-upload.yaml
       - ./tmp:/tmp/athena
+    environment:
+      http_proxy: http://proxy.internal:3128
+      https_proxy: http://proxy.internal:3128
+      no_proxy: canonical--obiwan.sandbox.my.salesforce.com
     command: /athena-processor --config /etc/athena/main.yaml --config /etc/athena/processor.yaml --config /etc/athena/processor-upload.yaml --log.level="debug"
     depends_on:
       - nats-streaming
