@@ -56,6 +56,7 @@ func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]stri
 }
 
 func (m *Monitor) GetLatestFiles(dirs []string, duration time.Duration) ([]db.File, error) {
+	log.Debugf("Getting files in %v", dirs)
 	files, err := m.FilesClient.GetFiles(dirs)
 	if err != nil {
 		return nil, err
@@ -195,7 +196,6 @@ func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
 	}
 }
 func (m *Monitor) Run(ctx context.Context) error {
-
 	pubsub.SetClient(&pubsub.Client{
 		ServiceName: "athena-processor",
 		Provider:    m.Provider,
