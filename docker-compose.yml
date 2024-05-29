@@ -24,9 +24,9 @@ services:
       - ./athena-monitor-directories.yaml:/etc/athena/monitor-directories.yaml
       - ./tmp:/tmp/athena
     environment:
-      http_proxy: http://proxy.internal:3128
-      https_proxy: http://proxy.internal:3128
-      no_proxy: canonical--obiwan.sandbox.my.salesforce.com
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
+      no_proxy: ${no_proxy}
     command: /athena-monitor --config /etc/athena/main.yaml --config /etc/athena/monitor.yaml --config /etc/athena/monitor-directories.yaml --log.level=debug
     depends_on:
       - nats-streaming
@@ -44,9 +44,9 @@ services:
       - ./athena-processor-upload.yaml:/etc/athena/processor-upload.yaml
       - ./tmp:/tmp/athena
     environment:
-      http_proxy: http://proxy.internal:3128
-      https_proxy: http://proxy.internal:3128
-      no_proxy: canonical--obiwan.sandbox.my.salesforce.com
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
+      no_proxy: ${no_proxy}
     command: /athena-processor --config /etc/athena/main.yaml --config /etc/athena/processor.yaml --config /etc/athena/processor-upload.yaml --log.level="debug"
     depends_on:
       - nats-streaming
