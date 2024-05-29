@@ -52,7 +52,6 @@ func main() {
 		os.Exit(1)
 	}
 	for folderIterator.Next() {
-		folder := folderIterator.Folder()
-		fmt.Println(folder.Path)
+		fmt.Println(folderIterator.Folder().Path)
 	}
 }

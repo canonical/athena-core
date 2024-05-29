@@ -5,6 +5,8 @@ import (
 	"html"
 	"regexp"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/canonical/athena-core/pkg/config"
 	"github.com/simpleforce/simpleforce"
 )
@@ -32,6 +34,7 @@ type BaseSalesforceClient struct {
 }
 
 func NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
+	log.Infof("Creating new Salesforce client")
 	client := simpleforce.NewClient(config.Salesforce.Endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
 	if err := client.LoginPassword(config.Salesforce.Username, config.Salesforce.Password, config.Salesforce.SecurityToken); err != nil {
 		return nil, err

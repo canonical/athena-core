@@ -56,12 +56,10 @@ func (client *BaseFilesComClient) Download(toDownload *db.File, downloadPath str
 
 func (client *BaseFilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 	var files []db.File
-
 	newClient := folder.Client{Config: client.ApiClient.Config}
 	for _, directory := range dirs {
 		log.Infof("Listing files available on %s", directory)
-		params := filessdk.FolderListForParams{Path: directory}
-		it, err := newClient.ListFor(context.Background(), params)
+		it, err := newClient.ListFor(context.Background(), filessdk.FolderListForParams{Path: directory})
 		if err != nil {
 			return nil, err
 		}
@@ -79,5 +77,6 @@ func (client *BaseFilesComClient) GetFiles(dirs []string) ([]db.File, error) {
 }
 
 func NewFilesComClient(apiKey, endpoint string) (FilesComClient, error) {
+	log.Infof("Creating new files.com client")
 	return &BaseFilesComClient{ApiClient: file.Client{Config: filessdk.Config{APIKey: apiKey, Endpoint: endpoint}}}, nil
 }
