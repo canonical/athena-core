@@ -26,7 +26,7 @@ docker-build: athena-monitor docker-build-monitor athena-processor docker-build-
 .PHONY: docker-build-monitor docker-build-processor
 docker-build-monitor docker-build-processor: docker-build-%:
 	docker build \
-		--tag athena/athena-$*-linux-amd64:$(subst /,-,$(shell git rev-parse --abbrev-ref HEAD)) \
+		--tag athena/athena-$*:$(subst /,-,$(shell git rev-parse --abbrev-ref HEAD)) \
 		--file cmd/$*/Dockerfile \
 		$(if $(NOCACHE),--no-cache,) \
 		--build-arg ARCH=amd64 \
