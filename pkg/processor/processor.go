@@ -327,6 +327,10 @@ func NewReportRunner(cfg *config.Config, dbConn *gorm.DB, sf common.SalesforceCl
 }
 
 func (runner *ReportRunner) Clean() error {
+	if runner.Config.Processor.KeepProcessingOutput {
+		log.Infof("Keeping base direcotry %s for report %s", runner.Basedir, runner.Name)
+		return nil
+	}
 	log.Infof("Removing base directory: %s for report: %s", runner.Basedir, runner.Name)
 	return os.RemoveAll(runner.Basedir)
 }

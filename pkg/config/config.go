@@ -57,10 +57,11 @@ func NewMonitor() Monitor {
 }
 
 type Processor struct {
-	ReportsUploadPath  string                `yaml:"reports-upload-dir"`
-	BatchCommentsEvery string                `yaml:"batch-comments-every"`
-	BaseTmpDir         string                `yaml:"base-tmpdir"`
-	SubscribeTo        map[string]Subscriber `yaml:"subscribers,omitempty"`
+	ReportsUploadPath    string                `yaml:"reports-upload-dir"`
+	BatchCommentsEvery   string                `yaml:"batch-comments-every"`
+	BaseTmpDir           string                `yaml:"base-tmpdir"`
+	KeepProcessingOutput bool                  `yaml:"keep-processing-output"`
+	SubscribeTo          map[string]Subscriber `yaml:"subscribers,omitempty"`
 }
 
 func NewProcessor() Processor {
