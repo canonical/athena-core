@@ -38,10 +38,7 @@ func main() {
 	if *uploadFile != "" {
 		filename := filepath.Base(*uploadFile)
 		fileClient := file.Client{Config: filesConfig}
-		status, err := fileClient.UploadFile(context.Background(), &file.UploadParams{Source: *uploadFile, Destination: filepath.Join(*path, filename)})
-		if err != nil {
-			fmt.Printf("Error uploading file %s: %s", *uploadFile, err)
-		}
+		status := fileClient.UploadFile(context.Background(), &file.UploadParams{Source: *uploadFile, Destination: filepath.Join(*path, filename)})
 		fmt.Println(status.Files())
 	}
 
