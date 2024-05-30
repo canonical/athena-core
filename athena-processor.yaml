@@ -1,6 +1,7 @@
 processor:
   batch-comments-every: 1m
   base-tmpdir: "/tmp/athena"
+  keep-processing-output: true
   subscribers:
     sosreports:
       sf-comment-enabled: true
