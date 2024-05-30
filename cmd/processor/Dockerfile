@@ -12,8 +12,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends
     git \
     jq \
     patool \
+    pipx \
     python3 \
-    python3-pip \
     python3-simplejson \
     python3-yaml \
     xz-utils
