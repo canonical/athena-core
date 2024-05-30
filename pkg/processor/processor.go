@@ -63,12 +63,11 @@ type ReportRunner struct {
 }
 
 func RunWithTimeout(baseDir string, timeout time.Duration, command string) ([]byte, error) {
-	log.Debugf("Running script with %s timeout", timeout)
+	log.Debugf("Running script with %s timeout in %s", timeout, baseDir)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 	cmd.Dir = baseDir
-
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
 		return nil, nil
@@ -77,7 +76,7 @@ func RunWithTimeout(baseDir string, timeout time.Duration, command string) ([]by
 }
 
 func RunWithoutTimeout(baseDir string, command string) ([]byte, error) {
-	log.Debug("Running script without timeout")
+	log.Debugf("Running script without timeout in %s", baseDir)
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = baseDir
 	return cmd.CombinedOutput()
@@ -95,6 +94,7 @@ func RunReport(report *ReportToExecute) (map[string][]byte, error) {
 		} else {
 			ret, err = RunWithoutTimeout(report.BaseDir, script)
 		}
+		log.Debugf("Script '%s' on '%s' completed", scriptName, filepath.Base(report.FileName))
 		if err != nil {
 			log.Errorf("Error occurred (test) while running script: %s", err)
 			for _, line := range strings.Split(string(ret), "\n") {

@@ -37,14 +37,13 @@ processor:
                 set -e -u
                 pipx install hotsos &>/dev/null
                 pipx upgrade hotsos &>/dev/null
-                tar -xf {{filepath}} -C {{basedir}} &>/dev/null
-                ~/.local/bin/hotsos --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                tar -xf {{filepath}} -C {{basedir}} &>/dev/null || true
+                ~/.local/bin/hotsos --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null || true
                 if [ -s hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml ]; then
                   cat hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml
                 else
                   echo "No full sosreport generated."
                 fi
-                rm -rf hotsos-out
                 exit 0
             hotsos-short:
               exit-codes: 0 2 127 126
@@ -53,12 +52,11 @@ processor:
                 set -e -u
                 pipx install hotsos &>/dev/null
                 pipx upgrade hotsos &>/dev/null
-                tar -xf {{filepath}} -C {{basedir}} &>/dev/null
-                ~/.local/bin/hotsos --short --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                tar -xf {{filepath}} -C {{basedir}} &>/dev/null || true
+                ~/.local/bin/hotsos --short --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null || true
                 if [ -s hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml ]; then
                   cat hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml
                 else
                   echo "No known bugs or issues found on sosreport."
                 fi
-                rm -rf hotsos-out
                 exit 0
