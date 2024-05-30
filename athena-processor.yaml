@@ -33,9 +33,11 @@ processor:
               exit-codes: 0 2 127 126
               run: |
                 #!/bin/bash
-                pip3 install hotsos --upgrade &>/dev/null
+                set -e -u
+                pipx install hotsos &>/dev/null
+                pipx upgrade hotsos &>/dev/null
                 tar -xf {{filepath}} -C {{basedir}} &>/dev/null
-                hotsos --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                ~/.local/bin/hotsos --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
                 if [ -s hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml ]; then
                   cat hotsos-out/*/summary/full/yaml/hotsos-summary.all.yaml
                 else
@@ -47,9 +49,11 @@ processor:
               exit-codes: 0 2 127 126
               run: |
                 #!/bin/bash
-                pip3 install hotsos --upgrade &>/dev/null
+                set -e -u
+                pipx install hotsos &>/dev/null
+                pipx upgrade hotsos &>/dev/null
                 tar -xf {{filepath}} -C {{basedir}} &>/dev/null
-                hotsos --short --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
+                ~/.local/bin/hotsos --short --save --output-path hotsos-out --all-logs {{basedir}}/$(basename {{filepath}} .tar.xz)/ &>/dev/null
                 if [ -s hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml ]; then
                   cat hotsos-out/*/summary/short/yaml/hotsos-summary.all.yaml
                 else
