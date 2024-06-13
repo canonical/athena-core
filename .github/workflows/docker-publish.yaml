@@ -5,7 +5,9 @@ on:
     - cron: '31 13 * * *'
   push:
     branches: [ "main" ]
-    tags: [ 'v*.*.*' ]
+    tags:
+      - 'v*.*.*' # v0.1.2
+      - 'v2*-*'  # v20240613-1
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
