@@ -20,4 +20,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends
 RUN update-ca-certificates
 RUN mkdir /etc/athena/
 
-COPY ./athena-processor /athena-processor
+COPY ./build/athena-processor /athena-processor

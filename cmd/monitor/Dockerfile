@@ -18,4 +18,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends
 RUN update-ca-certificates
 RUN mkdir /etc/athena/
 
-COPY ./athena-monitor /athena-monitor
+COPY ./build/athena-monitor /athena-monitor
