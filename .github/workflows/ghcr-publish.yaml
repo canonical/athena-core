@@ -19,6 +19,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+    needs: test-and-build
 
     steps:
       - name: Checkout repository
