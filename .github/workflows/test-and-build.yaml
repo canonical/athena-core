@@ -1,4 +1,4 @@
-name: Build and Test
+name: Test and Build
 
 on:
   schedule:
@@ -13,9 +13,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
 
 jobs:
-  test:
+  test-and-build:
     runs-on: ubuntu-latest
 
     steps:
