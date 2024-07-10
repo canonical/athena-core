@@ -61,7 +61,7 @@ require (
 	github.com/segmentio/ksuid v1.0.3 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/zenthangplus/goccm v1.1.3 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	google.golang.org/grpc v1.58.3 // indirect
