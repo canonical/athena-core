@@ -2,7 +2,7 @@ name: Publish to Docker Hub
 
 on:
   workflow_run:
-    workflows: [Build and Test]
+    workflows: [Test and Build]
     types:
       - completed
 

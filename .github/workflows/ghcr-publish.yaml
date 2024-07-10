@@ -2,7 +2,7 @@ name: Publish to ghcr.io
 
 on:
   workflow_run:
-    workflows: [Build and Test]
+    workflows: [Test and Build]
     types:
       - completed
 
@@ -11,6 +11,9 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  test-and-build:
+    uses: ./.github/workflows/test-and-build.yaml
+
   ghcr-publish:
     runs-on: ubuntu-latest
     permissions:
