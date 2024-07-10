@@ -13,6 +13,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  # We will include this workflow in the ghcr-build-and-publish.yaml workflow.
+  # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_call
   workflow_call:
 
 jobs:
