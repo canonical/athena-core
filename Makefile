@@ -1,5 +1,5 @@
 .PHONY: all
-all: lint build test
+all: lint build test install
 
 .PHONY: docker-compose
 docker-compose:
@@ -79,3 +79,9 @@ gofmt: check_modules
 .PHONY: test
 test:
 	go test -v ./...
+
+.PHONY: install
+install: build
+	rm -rf build
+	mkdir build
+	cp athena-monitor athena-processor build/
