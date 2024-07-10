@@ -1,12 +1,19 @@
+name: Build and Test
+
 on:
+  schedule:
+    - cron: '38 11 * * *'
   push:
     branches:
       - main
+    tags:
+      - 'v*.*.*' # v0.1.2
+      - 'v2*-*'  # v20240613-1
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
-name: Tests/Jobs for main branch merges
 jobs:
   test:
     strategy:
@@ -28,3 +35,9 @@ jobs:
 
       - name: Test and Build
         run: make all
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: build/*

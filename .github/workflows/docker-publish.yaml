@@ -1,16 +1,10 @@
 name: Publish to Docker Hub
 
 on:
-  schedule:
-    - cron: '31 13 * * *'
-  push:
-    branches: [ "main" ]
-    tags:
-      - 'v*.*.*' # v0.1.2
-      - 'v2*-*'  # v20240613-1
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+  workflow_run:
+    workflows: [Build and Test]
+    types:
+      - completed
 
 env:
   REGISTRY: docker.io
@@ -18,8 +12,7 @@ env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || 'unpublished' }}
 
 jobs:
-  build:
-
+  docker-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,8 +22,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Install cosign
         if: github.event_name != 'pull_request'

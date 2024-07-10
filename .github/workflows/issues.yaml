@@ -1,10 +1,13 @@
 name: Issues Sync
+
 on:
   issues:
     types: opened
+
 jobs:
   sync-issues:
     runs-on: ubuntu-latest
+
     steps:
       - uses: alex-page/github-project-automation-plus@v0.9.0
         with:
