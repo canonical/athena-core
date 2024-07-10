@@ -2,6 +2,8 @@ module github.com/canonical/athena-core
 
 go 1.22
 
+toolchain go1.22.5
+
 require (
 	github.com/Files-com/files-sdk-go v1.2.1218
 	github.com/flosch/pongo2/v4 v4.0.2
