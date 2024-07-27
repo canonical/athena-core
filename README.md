@@ -121,8 +121,8 @@ without using the cache,
 NOCACHE=1 make devel
 ```
 
-The `devel` deployment includes a `debug` container which can be used to
-inspect the database.
+The `devel` deployment includes a `debug` container which can be used to inspect
+the database.
 
 ```shell
 $ docker exec --interactive --tty debug bash
