@@ -72,12 +72,13 @@ func NewProcessor() Processor {
 }
 
 type SalesForce struct {
-	Endpoint         string `yaml:"endpoint"`
-	Username         string `yaml:"username"`
-	Password         string `yaml:"password"`
-	SecurityToken    string `yaml:"security-token"`
-	MaxCommentLength int    `yaml:"max-comment-length"`
-	EnableChatter    bool   `yaml:"enable-chatter"`
+	Endpoint               string `yaml:"endpoint"`
+	Username               string `yaml:"username"`
+	Password               string `yaml:"password"`
+	SecurityToken          string `yaml:"security-token"`
+	MaxCommentLength       int    `yaml:"max-comment-length"`
+	MaxNumberCommentChunks int    `yaml:"max-number-comment-chunks"`
+	EnableChatter          bool   `yaml:"enable-chatter"`
 }
 
 func NewSalesForce() SalesForce {
