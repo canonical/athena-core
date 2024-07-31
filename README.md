@@ -70,8 +70,8 @@ In order to stand up a development environment, you will need
 - `docker-compose`
 - `golang >= 1.19`
 
-For running a docker based installation locally you will need a sandbox
-account on Salesforce and a sandbox directory on files.com. Supply
+For running a docker based installation locally you will need a sandbox account
+on Salesforce and a sandbox directory on files.com. Supply
 
 1. A list of the corresponding credentials in `creds.yaml`,
 
@@ -100,7 +100,7 @@ account on Salesforce and a sandbox directory on files.com. Supply
           - "/sandbox/..."
       ```
 
-3. A path for where the report uploads will go in
+1. A path for where the report uploads will go in
    `athena-processor-upload.yaml`,
 
       ```yaml
@@ -121,8 +121,8 @@ without using the cache,
 NOCACHE=1 make devel
 ```
 
-The `devel` deployment includes a `debug` container which can be used to
-inspect the database.
+The `devel` deployment includes a `debug` container which can be used to inspect
+the database.
 
 ```shell
 $ docker exec --interactive --tty debug bash
