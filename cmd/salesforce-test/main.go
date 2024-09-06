@@ -14,6 +14,7 @@ var configs = common.StringList(
 	kingpin.Flag("config", "Path to the athena configuration file").Default("/etc/athena/main.yaml").Short('c'),
 )
 
+var commit string
 var allCases = kingpin.Flag("all-cases", "Get all cases").Default("false").Bool()
 var allFeedComments = kingpin.Flag("all-feed-comments", "Get all FeedComments").Default("false").Bool()
 var allFeedItems = kingpin.Flag("all-feed-items", "Get all FeedItems").Default("false").Bool()
@@ -24,6 +25,8 @@ var getComments = kingpin.Flag("comments", "Get all comments of case").Default("
 var newChatter = kingpin.Flag("new-chatter", "Add a new chatter comment to the case").Default("").String()
 
 func main() {
+	log.Printf("Starting version %s", commit)
+
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
