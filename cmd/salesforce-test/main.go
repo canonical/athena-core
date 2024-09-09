@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 
 	"github.com/canonical/athena-core/pkg/common"
@@ -15,15 +16,20 @@ var configs = common.StringList(
 )
 
 var commit string
-var allCases = kingpin.Flag("all-cases", "Get all cases").Default("false").Bool()
-var allFeedComments = kingpin.Flag("all-feed-comments", "Get all FeedComments").Default("false").Bool()
-var allFeedItems = kingpin.Flag("all-feed-items", "Get all FeedItems").Default("false").Bool()
-var caseNumber = kingpin.Flag("case-id", "The case ID to query").Default("").String()
-var commentVisibility = kingpin.Flag("visibility", "Set the comment visibility {public, private)").Default("private").String()
-var getChatter = kingpin.Flag("chatter", "Get all chatter objects of case").Default("false").Bool()
-var getComments = kingpin.Flag("comments", "Get all comments of case").Default("false").Bool()
-var newChatter = kingpin.Flag("new-chatter", "Add a new chatter comment to the case").Default("").String()
-var runQuery = kingpin.Flag("query", "Run query").Default("").String()
+
+var (
+	allCases          = kingpin.Flag("all-cases", "Get all cases").Default("false").Bool()
+	allFeedComments   = kingpin.Flag("all-feed-comments", "Get all FeedComments").Default("false").Bool()
+	allFeedItems      = kingpin.Flag("all-feed-items", "Get all FeedItems").Default("false").Bool()
+	caseNumber        = kingpin.Flag("case-id", "The case ID to query").Default("").String()
+	commentVisibility = kingpin.Flag("visibility", "Set the comment visibility {public, private)").Default("private").String()
+	describe          = kingpin.Flag("describe", "Describe object").Default("").String()
+	describeGlobal    = kingpin.Flag("describe-global", "Get the List of all available objects and their metadata for your organization's data").Default("false").Bool()
+	getChatter        = kingpin.Flag("chatter", "Get all chatter objects of case").Default("false").Bool()
+	getComments       = kingpin.Flag("comments", "Get all comments of case").Default("false").Bool()
+	newChatter        = kingpin.Flag("new-chatter", "Add a new chatter comment to the case").Default("").String()
+	runQuery          = kingpin.Flag("query", "Run query").Default("").String()
+)
 
 func main() {
 	log.Printf("Starting version %s", commit)
@@ -60,6 +66,14 @@ func main() {
 		getAllFeedItems(sfClient)
 	}
 
+	if *describeGlobal {
+		getDescribeGlobal(sfClient)
+	}
+
+	if len(*describe) > 0 {
+		getDescribe(sfClient, *describe)
+	}
+
 	if len(*caseNumber) > 0 {
 		caseId := getCase(sfClient)
 		if *getComments {
@@ -87,7 +101,7 @@ func getQueryResult(sfClient common.SalesforceClient, queryString string) {
 		log.Fatalf("Failed to run query: %v", err)
 	}
 	if len(records.Records) == 0 {
-		log.Fatal("Coudl not find any records")
+		log.Fatal("Could not find any records")
 	}
 	for _, record := range records.Records {
 		log.Printf("%v", record)
@@ -172,6 +186,58 @@ func getAllFeedItems(sfClient common.SalesforceClient) {
 	}
 	for _, result := range records.Records {
 		log.Printf("%s", result["Id"])
+	}
+}
+
+func getDescribeGlobal(sfClient common.SalesforceClient) {
+	log.Println("Getting all available global objects")
+	describeResult, err := sfClient.DescribeGlobal()
+	if err != nil {
+		log.Fatalf("Failed to get all global objects: %s", err)
+	}
+	for key, record := range *describeResult {
+		if key == "sobjects" {
+			log.Printf("Type of record is %T", record)
+			if recordList, ok := record.([]interface{}); ok {
+				log.Printf("Type of records[0] is %T", recordList[0])
+				if record, ok := recordList[0].(map[string]interface{}); ok {
+					log.Printf("Object '%s'", record["name"])
+					for key, object := range record {
+						log.Printf("  Field %s: %+v", key, object)
+					}
+				}
+			} else {
+				log.Printf("Object %s is not to type []interface{}", recordList)
+			}
+		} else {
+			log.Printf("Object %s: %+v", key, record)
+		}
+	}
+}
+
+func getDescribe(sfClient common.SalesforceClient, objectName string) {
+	log.Printf("Getting description of '%s'", objectName)
+	meta := sfClient.SObject(objectName).Describe()
+	fieldNames := []string{}
+	log.Println("Fields")
+	for metaKey, metaValue := range *meta {
+		if metaKey == "fields" {
+			if fields, ok := metaValue.([]interface{}); ok {
+				for _, field := range fields {
+					if fieldMap, ok := field.(map[string]interface{}); ok {
+						for fieldName, fieldValue := range fieldMap {
+							if fieldName == "name" {
+								fieldNames = append(fieldNames, fmt.Sprintf("%s", fieldValue))
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	sort.Strings(fieldNames)
+	for _, field := range fieldNames {
+		log.Printf("  %s", field)
 	}
 }
 

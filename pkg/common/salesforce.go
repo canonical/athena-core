@@ -22,9 +22,10 @@ func (e ErrNoCaseFound) Error() string {
 var ErrAuthentication = simpleforce.ErrAuthentication
 
 type SalesforceClient interface {
+	DescribeGlobal() (*simpleforce.SObjectMeta, error)
 	GetCaseByNumber(number string) (*Case, error)
-	PostComment(caseId, body string, isPublic bool) *simpleforce.SObject
 	PostChatter(caseId, body string, isPublic bool) *simpleforce.SObject
+	PostComment(caseId, body string, isPublic bool) *simpleforce.SObject
 	Query(query string) (*simpleforce.QueryResult, error)
 	SObject(objectName ...string) *simpleforce.SObject
 }
@@ -102,5 +103,5 @@ func GetCaseNumberFromFilename(filename string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("Failed to identify case number from filename '%s'", filename)
+	return "", fmt.Errorf("failed to identify case number from filename '%s'", filename)
 }
