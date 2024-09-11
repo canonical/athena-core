@@ -1,8 +1,8 @@
 module github.com/canonical/athena-core
 
-go 1.22
+go 1.23
 
-toolchain go1.22.5
+toolchain go1.23.1
 
 require (
 	github.com/Files-com/files-sdk-go v1.2.1218
