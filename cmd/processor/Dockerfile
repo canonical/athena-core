@@ -21,3 +21,4 @@ RUN update-ca-certificates
 RUN mkdir /etc/athena/
 
 COPY ./build/athena-processor /athena-processor
+RUN chmod 755 /athena-processor
