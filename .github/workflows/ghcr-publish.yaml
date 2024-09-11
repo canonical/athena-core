@@ -1,10 +1,6 @@
 name: Publish to ghcr.io
 
 on:
-  workflow_run:
-    workflows: [Test and Build]
-    types:
-      - completed
   release:
     types:
       - published
