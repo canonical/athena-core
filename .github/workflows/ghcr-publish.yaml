@@ -7,6 +7,9 @@ on:
     workflows: [Test and Build]
     types:
       - completed
+  release:
+    types:
+      - published
 
 env:
   REGISTRY: ghcr.io

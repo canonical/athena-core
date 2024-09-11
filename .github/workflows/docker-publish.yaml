@@ -5,6 +5,9 @@ on:
     workflows: [Test and Build]
     types:
       - completed
+  release:
+    types:
+      - published
 
 env:
   REGISTRY: docker.io
@@ -26,12 +29,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@v3
-        with:
-          cosign-release: 'v2.1.1'
 
       - name: Get packages
         uses: actions/download-artifact@v4
