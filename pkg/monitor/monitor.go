@@ -18,12 +18,12 @@ import (
 )
 
 type Monitor struct {
-	Db               *gorm.DB                // Database connection
-	Config           *config.Config          // Configuration instance
-	FilesClient      common.FilesComClient   // Files.com client
-	SalesforceClient common.SalesforceClient // SalesForce client
-	Provider         pubsub.Provider         // Messaging provider
-	mu               *sync.Mutex             // A mutex
+	Config                  *config.Config                 // Configuration instance
+	Db                      *gorm.DB                       // Database connection
+	FilesComClientFactory   common.FilesComClientFactory   // How to create a new Files.com client
+	mu                      *sync.Mutex                    // A mutex
+	Provider                pubsub.Provider                // Messaging provider
+	SalesforceClientFactory common.SalesforceClientFactory // How to create a new Salesforce client
 }
 
 func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]string, error) {
@@ -50,14 +50,18 @@ func (m *Monitor) GetMatchingProcessors(filename string, c *common.Case) ([]stri
 		}
 	}
 	if len(processors) <= 0 {
-		return nil, fmt.Errorf("No processor found for file=%s", filename)
+		return nil, fmt.Errorf("no processor found for file=%s", filename)
 	}
 	return processors, nil
 }
 
 func (m *Monitor) GetLatestFiles(dirs []string, duration time.Duration) ([]db.File, error) {
 	log.Debugf("Getting files in %v", dirs)
-	files, err := m.FilesClient.GetFiles(dirs)
+	filesClient, err := m.FilesComClientFactory.NewFilesComClient(m.Config.FilesCom.Key, m.Config.FilesCom.Endpoint)
+	if err != nil {
+		panic(err)
+	}
+	files, err := filesClient.GetFiles(dirs)
 	if err != nil {
 		return nil, err
 	}
@@ -74,25 +78,19 @@ func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.F
 	var sfCase = &common.Case{}
 	var results = make(map[string][]db.File)
 
+	salesforceClient, err := m.SalesforceClientFactory.NewSalesforceClient(m.Config)
+	if err != nil {
+		panic(err)
+	}
+
 	for _, file := range files {
 		var processors []string
 
 		caseNumber, err := common.GetCaseNumberFromFilename(file.Path)
 		if err == nil {
-			sfCase, err = m.SalesforceClient.GetCaseByNumber(caseNumber)
+			sfCase, err = salesforceClient.GetCaseByNumber(caseNumber)
 			if err != nil {
-				// The SalesForce connection possibly died on us. Let's try to
-				// revive it and then try again.
-				log.Warn("Creating new SF client since current one is failing")
-				m.SalesforceClient, err = common.NewSalesforceClient(m.Config)
-				if err != nil {
-					log.Errorf("Failed to reconnect to salesforce: %s", err)
-					panic(err)
-				}
-				sfCase, err = m.SalesforceClient.GetCaseByNumber(caseNumber)
-				if err != nil {
-					log.Error(err)
-				}
+				log.Warningf("Failed to get a case from number: '%s'", caseNumber)
 			}
 		} else {
 			log.Warningf("Failed to identify case from filename '%s': %s", file.Path, err)
@@ -117,8 +115,9 @@ func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.F
 	return results, nil
 }
 
-func NewMonitor(filesClient common.FilesComClient, salesforceClient common.SalesforceClient, provider pubsub.Provider,
-	cfg *config.Config, dbConn *gorm.DB) (*Monitor, error) {
+func NewMonitor(provider pubsub.Provider, cfg *config.Config, dbConn *gorm.DB,
+	salesforceClientFactory common.SalesforceClientFactory,
+	filesComClientFactory common.FilesComClientFactory) (*Monitor, error) {
 	var err error
 	if dbConn == nil {
 		dbConn, err = db.GetDBConn(cfg)
@@ -128,12 +127,13 @@ func NewMonitor(filesClient common.FilesComClient, salesforceClient common.Sales
 	}
 
 	return &Monitor{
-		Provider:         provider,
-		Db:               dbConn,
-		FilesClient:      filesClient,
-		SalesforceClient: salesforceClient,
-		Config:           cfg,
-		mu:               new(sync.Mutex)}, nil
+		Config:                  cfg,
+		Db:                      dbConn,
+		FilesComClientFactory:   filesComClientFactory,
+		mu:                      new(sync.Mutex),
+		Provider:                provider,
+		SalesforceClientFactory: salesforceClientFactory,
+	}, nil
 }
 
 func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
@@ -153,6 +153,11 @@ func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
 	if err != nil {
 		log.Error(err)
 		return
+	}
+
+	filesClient, err := m.FilesComClientFactory.NewFilesComClient(m.Config.FilesCom.Key, m.Config.FilesCom.Endpoint)
+	if err != nil {
+		panic(err)
 	}
 
 	log.Infof("Found %d new files, %d to be processed", len(latestFiles), len(processors))
@@ -175,7 +180,7 @@ func (m *Monitor) PollNewFiles(ctx *context.Context, duration time.Duration) {
 				}
 			}
 			log.Debugf("Using temporary base path: %s", basePath)
-			fileEntry, err := m.FilesClient.Download(&file, basePath)
+			fileEntry, err := filesClient.Download(&file, basePath)
 			if err != nil {
 				log.Errorf("Failed to download %s: %s - skipping", file.Path, err)
 				continue

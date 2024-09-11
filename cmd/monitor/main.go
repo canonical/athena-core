@@ -40,22 +40,14 @@ func main() {
 		log.Debug(line)
 	}
 
-	filesClient, err := common.NewFilesComClient(cfg.FilesCom.Key, cfg.FilesCom.Endpoint)
-	if err != nil {
-		panic(err)
-	}
-
-	sfClient, err := common.NewSalesforceClient(cfg)
-	if err != nil {
-		panic(err)
-	}
-
 	natsClient, err := nats.NewNats("test-cluster", stan.NatsURL(*natsUrl))
 	if err != nil {
 		panic(err)
 	}
 
-	m, err := monitor.NewMonitor(filesClient, sfClient, natsClient, cfg, nil)
+	salesforceClientFactory := &common.BaseSalesforceClientFactory{}
+	filesComClientFactory := &common.BaseFilesComClientFactory{}
+	m, err := monitor.NewMonitor(natsClient, cfg, nil, salesforceClientFactory, filesComClientFactory)
 	if err != nil {
 		panic(err)
 	}
