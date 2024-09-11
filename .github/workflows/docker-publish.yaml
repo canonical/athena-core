@@ -13,6 +13,8 @@ env:
 
 jobs:
   test-and-build:
+    # Include the build workflow.
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_iduses
     uses: ./.github/workflows/test-and-build.yaml
 
   docker-publish:
@@ -20,7 +22,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write
     needs: test-and-build
 
     steps:
