@@ -21,7 +21,7 @@ docker-compose:
 devel:  athena-monitor athena-processor docker-build docker-compose
 
 .PHONY: common-docker monitor processor
-docker-build: athena-monitor docker-build-monitor athena-processor docker-build-processor debug-container
+docker-build: athena-monitor docker-build-monitor athena-processor docker-build-processor docker-build-debug-container
 
 .PHONY: docker-build-monitor docker-build-processor
 docker-build-monitor docker-build-processor: docker-build-%:
@@ -33,8 +33,8 @@ docker-build-monitor docker-build-processor: docker-build-%:
 		--build-arg OS=linux \
 		.
 
-.PHONY: debug-container
-debug-container:
+.PHONY: docker-build-debug-container
+docker-build-debug-container:
 	docker build \
 		--tag debug-container \
 		--file Dockerfile-debug \
