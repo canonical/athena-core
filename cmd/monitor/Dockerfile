@@ -19,3 +19,4 @@ RUN update-ca-certificates
 RUN mkdir /etc/athena/
 
 COPY ./build/athena-monitor /athena-monitor
+RUN chmod 755 /athena-monitor
