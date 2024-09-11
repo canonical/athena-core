@@ -25,8 +25,10 @@ var (
 	commentVisibility = kingpin.Flag("visibility", "Set the comment visibility {public, private)").Default("private").String()
 	describe          = kingpin.Flag("describe", "Describe object").Default("").String()
 	describeGlobal    = kingpin.Flag("describe-global", "Get the List of all available objects and their metadata for your organization's data").Default("false").Bool()
+	getCaseFeed       = kingpin.Flag("case-feed", "Get all CaseFeed items from a case").Default("false").Bool()
 	getChatter        = kingpin.Flag("chatter", "Get all chatter objects of case").Default("false").Bool()
 	getComments       = kingpin.Flag("comments", "Get all comments of case").Default("false").Bool()
+	newCaseFeed       = kingpin.Flag("new-case-feed", "Add new CaseFeed comment to case").Default("").String()
 	newChatter        = kingpin.Flag("new-chatter", "Add a new chatter comment to the case").Default("").String()
 	runQuery          = kingpin.Flag("query", "Run query").Default("").String()
 )
@@ -84,8 +86,16 @@ func main() {
 			getAllChatterComments(caseId, sfClient)
 		}
 
+		if *getCaseFeed {
+			getAllCaseFeed(caseId, sfClient)
+		}
+
 		if len(*newChatter) > 0 {
 			newChatterComment(sfClient, caseId, *newChatter)
+		}
+
+		if len(*newCaseFeed) > 0 {
+			newCaseFeedComment(sfClient, caseId, *newCaseFeed)
 		}
 	}
 
@@ -126,6 +136,24 @@ func newChatterComment(sfClient common.SalesforceClient, caseId string, comment 
 		Create()
 }
 
+func newCaseFeedComment(sfClient common.SalesforceClient, caseId string, comment string) {
+	log.Printf("Added new chatter (CaseFeed) comment for Id %s", caseId)
+	visibility := ""
+	switch *commentVisibility {
+	case "public":
+		visibility = "AllUsers"
+	case "private":
+		visibility = "InternalUsers"
+	default:
+		log.Fatal("Unknown visibility")
+	}
+	sfClient.SObject("CaseFeed").
+		Set("ParentId", caseId).
+		Set("Body", comment).
+		Set("Visibility", visibility).
+		Create()
+}
+
 func getAllChatterComments(caseId string, sfClient common.SalesforceClient) {
 	log.Print("Getting case chatter comments")
 	query := fmt.Sprintf("SELECT Id, Body FROM FeedItem WHERE ParentID = '%s'", caseId)
@@ -139,6 +167,23 @@ func getAllChatterComments(caseId string, sfClient common.SalesforceClient) {
 	}
 	for _, comment := range records.Records {
 		log.Printf("%s: %s", comment["Id"], comment["Body"])
+	}
+}
+func getAllCaseFeed(caseId string, sfClient common.SalesforceClient) {
+	log.Print("Getting case feed chatter comments")
+	query := fmt.Sprintf("SELECT Id, Body FROM CaseFeed WHERE ParentID = '%s'", caseId)
+	log.Printf("Running query: '%s'", query)
+	records, err := sfClient.Query(query)
+	if err != nil {
+		log.Fatalf("Failed to get chatter comments: %v", err)
+	}
+	if len(records.Records) == 0 {
+		log.Fatal("Could not find any chatter comments")
+	}
+	for _, comment := range records.Records {
+		if comment["Body"] != nil {
+			log.Printf("%s: %s", comment["Id"], comment["Body"])
+		}
 	}
 }
 
