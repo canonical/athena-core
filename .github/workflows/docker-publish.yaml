@@ -52,7 +52,7 @@ jobs:
 
       - name: Build and publish Docker - processor
         id: processor-build-and-push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./cmd/processor/Dockerfile
@@ -69,7 +69,7 @@ jobs:
 
       - name: Build and publish Docker - monitor
         id: monitor_build-and-push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./cmd/monitor/Dockerfile
