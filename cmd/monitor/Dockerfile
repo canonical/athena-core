@@ -1,5 +1,5 @@
 FROM ubuntu:24.04
-LABEL maintainer="Canonical Sustaining Engineering <edward.hope-morley@canonical.com>"
+LABEL maintainer="Canonical Sustaining Engineering <nicolas.bock@canonical.com>"
 LABEL org.opencontainers.image.description "Athena Monitor"
 
 RUN apt-get update

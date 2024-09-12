@@ -2,7 +2,7 @@
 all: lint build test install
 
 .PHONY: docker-compose
-docker-compose:
+docker-compose: docker-build
 	if docker-compose version > /dev/null 2>&1; then \
 		DOCKER_COMPOSE="docker-compose"; \
 	else \
