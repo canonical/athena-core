@@ -18,18 +18,19 @@ var configs = common.StringList(
 var commit string
 
 var (
-	allCases          = kingpin.Flag("all-cases", "Get all cases").Default("false").Bool()
-	allFeedComments   = kingpin.Flag("all-feed-comments", "Get all FeedComments").Default("false").Bool()
-	allFeedItems      = kingpin.Flag("all-feed-items", "Get all FeedItems").Default("false").Bool()
+	addCaseFeed       = kingpin.Flag("add-case-feed", "Add new CaseFeed object to case").Default("").String()
+	addFeedItem       = kingpin.Flag("add-feed-item", "Add a new FeedItem object to the case").Default("").String()
+	allCase           = kingpin.Flag("all-cases", "Get all Case objects").Default("false").Bool()
+	allCaseFeed       = kingpin.Flag("all-case-feed", "Get all CaseFeed objects").Default("false").Bool()
+	allFeedComment    = kingpin.Flag("all-feed-comments", "Get all FeedComment objects").Default("false").Bool()
+	allFeedItem       = kingpin.Flag("all-feed-items", "Get all FeedItem objects").Default("false").Bool()
 	caseNumber        = kingpin.Flag("case-id", "The case ID to query").Default("").String()
 	commentVisibility = kingpin.Flag("visibility", "Set the comment visibility {public, private)").Default("private").String()
 	describe          = kingpin.Flag("describe", "Describe object").Default("").String()
 	describeGlobal    = kingpin.Flag("describe-global", "Get the List of all available objects and their metadata for your organization's data").Default("false").Bool()
-	getCaseFeed       = kingpin.Flag("case-feed", "Get all CaseFeed items from a case").Default("false").Bool()
-	getChatter        = kingpin.Flag("chatter", "Get all chatter objects of case").Default("false").Bool()
-	getComments       = kingpin.Flag("comments", "Get all comments of case").Default("false").Bool()
-	newCaseFeed       = kingpin.Flag("new-case-feed", "Add new CaseFeed comment to case").Default("").String()
-	newChatter        = kingpin.Flag("new-chatter", "Add a new chatter comment to the case").Default("").String()
+	getCaseComment    = kingpin.Flag("case-comment", "Get all CaseComment objects of case").Default("false").Bool()
+	getCaseFeed       = kingpin.Flag("case-feed", "Get all CaseFeed objects from a case").Default("false").Bool()
+	getFeedItem       = kingpin.Flag("feed-item", "Get all FeedItem objects of case").Default("false").Bool()
 	runQuery          = kingpin.Flag("query", "Run query").Default("").String()
 )
 
@@ -56,16 +57,20 @@ func main() {
 		panic(err)
 	}
 
-	if *allCases {
+	if *allCase {
 		getAllCases(sfClient)
 	}
 
-	if *allFeedComments {
+	if *allFeedComment {
 		getAllFeedComments(sfClient)
 	}
 
-	if *allFeedItems {
+	if *allFeedItem {
 		getAllFeedItems(sfClient)
+	}
+
+	if *allCaseFeed {
+		getAllCaseFeed(sfClient)
 	}
 
 	if *describeGlobal {
@@ -78,24 +83,24 @@ func main() {
 
 	if len(*caseNumber) > 0 {
 		caseId := getCase(sfClient)
-		if *getComments {
-			getAllCaseComments(caseId, sfClient)
+		if *getCaseComment {
+			getCaseComments(caseId, sfClient)
 		}
 
-		if *getChatter {
-			getAllChatterComments(caseId, sfClient)
+		if *getFeedItem {
+			getFeedItems(caseId, sfClient)
 		}
 
 		if *getCaseFeed {
-			getAllCaseFeed(caseId, sfClient)
+			getCaseFeeds(caseId, sfClient)
 		}
 
-		if len(*newChatter) > 0 {
-			newChatterComment(sfClient, caseId, *newChatter)
+		if len(*addFeedItem) > 0 {
+			newFeedItem(sfClient, caseId, *addFeedItem)
 		}
 
-		if len(*newCaseFeed) > 0 {
-			newCaseFeedComment(sfClient, caseId, *newCaseFeed)
+		if len(*addCaseFeed) > 0 {
+			newCaseFeed(sfClient, caseId, *addCaseFeed)
 		}
 	}
 
@@ -118,8 +123,8 @@ func getQueryResult(sfClient common.SalesforceClient, queryString string) {
 	}
 }
 
-func newChatterComment(sfClient common.SalesforceClient, caseId string, comment string) {
-	log.Print("Added new chatter comment")
+func newFeedItem(sfClient common.SalesforceClient, caseId string, comment string) {
+	log.Print("Added new FeedItem object to case")
 	visibility := ""
 	switch *commentVisibility {
 	case "public":
@@ -136,8 +141,8 @@ func newChatterComment(sfClient common.SalesforceClient, caseId string, comment 
 		Create()
 }
 
-func newCaseFeedComment(sfClient common.SalesforceClient, caseId string, comment string) {
-	log.Printf("Added new chatter (CaseFeed) comment for Id %s", caseId)
+func newCaseFeed(sfClient common.SalesforceClient, caseId string, comment string) {
+	log.Printf("Added new CaseFeed object to case %s", caseId)
 	visibility := ""
 	switch *commentVisibility {
 	case "public":
@@ -154,8 +159,8 @@ func newCaseFeedComment(sfClient common.SalesforceClient, caseId string, comment
 		Create()
 }
 
-func getAllChatterComments(caseId string, sfClient common.SalesforceClient) {
-	log.Print("Getting case chatter comments")
+func getFeedItems(caseId string, sfClient common.SalesforceClient) {
+	log.Print("Getting all FeedItem objects for case")
 	query := fmt.Sprintf("SELECT Id, Body FROM FeedItem WHERE ParentID = '%s'", caseId)
 	log.Printf("Running query: '%s'", query)
 	records, err := sfClient.Query(query)
@@ -169,8 +174,9 @@ func getAllChatterComments(caseId string, sfClient common.SalesforceClient) {
 		log.Printf("%s: %s", comment["Id"], comment["Body"])
 	}
 }
-func getAllCaseFeed(caseId string, sfClient common.SalesforceClient) {
-	log.Print("Getting case feed chatter comments")
+
+func getCaseFeeds(caseId string, sfClient common.SalesforceClient) {
+	log.Print("Getting all CaseFeed objects for case")
 	query := fmt.Sprintf("SELECT Id, Body FROM CaseFeed WHERE ParentID = '%s'", caseId)
 	log.Printf("Running query: '%s'", query)
 	records, err := sfClient.Query(query)
@@ -187,7 +193,7 @@ func getAllCaseFeed(caseId string, sfClient common.SalesforceClient) {
 	}
 }
 
-func getAllCaseComments(caseId string, sfClient common.SalesforceClient) {
+func getCaseComments(caseId string, sfClient common.SalesforceClient) {
 	log.Print("Getting case comments")
 	query := fmt.Sprintf("SELECT Id, CommentBody FROM CaseComment WHERE ParentId = '%s'", caseId)
 	records, err := sfClient.Query(query)
@@ -231,6 +237,21 @@ func getAllFeedItems(sfClient common.SalesforceClient) {
 	}
 	for _, result := range records.Records {
 		log.Printf("%s", result["Id"])
+	}
+}
+
+func getAllCaseFeed(sfClient common.SalesforceClient) {
+	log.Println("All CaseFeed:")
+	records, err := sfClient.Query("SELECT Id, Body, ParentId from CaseFeed")
+	if err != nil {
+		log.Fatalln("Failed to query for all CaseFeed")
+	}
+	for _, result := range records.Records {
+		if result["Body"] != nil {
+			log.Printf("%s (%s): %s", result["Id"], result["ParentId"], result["Body"])
+		} else {
+			log.Printf("%s (%s): empty body", result["Id"], result["ParentId"])
+		}
 	}
 }
 
