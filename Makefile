@@ -85,3 +85,10 @@ install: build
 	rm -rf build
 	mkdir build
 	cp athena-monitor athena-processor build/
+
+.PHONY: docs
+docs:
+	python3 -m venv venv
+	./venv/bin/pip install --upgrade pip
+	./venv/bin/pip install sphinx
+	. venv/bin/activate && make -C docs html
