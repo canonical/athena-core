@@ -30,9 +30,15 @@ type SalesforceClient interface {
 	SObject(objectName ...string) *simpleforce.SObject
 }
 
+type SalesforceClientFactory interface {
+	NewSalesforceClient(config *config.Config) (SalesforceClient, error)
+}
+
 type BaseSalesforceClient struct {
 	*simpleforce.Client
 }
+
+type BaseSalesforceClientFactory struct{}
 
 func NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
 	log.Infof("Creating new Salesforce client")
@@ -41,6 +47,10 @@ func NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
 		return nil, err
 	}
 	return &BaseSalesforceClient{client}, nil
+}
+
+func (sf *BaseSalesforceClientFactory) NewSalesforceClient(config *config.Config) (SalesforceClient, error) {
+	return NewSalesforceClient(config)
 }
 
 type Case struct {

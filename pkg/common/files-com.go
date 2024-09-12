@@ -22,9 +22,19 @@ type FilesComClient interface {
 	Upload(contents, destinationPath string) (*filessdk.File, error)
 }
 
+type FilesComClientFactory interface {
+	NewFilesComClient(apiKey, endpoint string) (FilesComClient, error)
+}
+
 type BaseFilesComClient struct {
 	FilesComClient
 	ApiClient file.Client
+}
+
+type BaseFilesComClientFactory struct{}
+
+func (client *BaseFilesComClientFactory) NewFilesComClient(apiKey, endpoint string) (FilesComClient, error) {
+	return NewFilesComClient(apiKey, endpoint)
 }
 
 func (client *BaseFilesComClient) Upload(contents, destinationPath string) (*filessdk.File, error) {

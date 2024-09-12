@@ -23,22 +23,22 @@ import (
 )
 
 type Processor struct {
-	Db               *gorm.DB
 	Config           *config.Config
+	Db               *gorm.DB
 	FilesClient      common.FilesComClient
-	SalesforceClient common.SalesforceClient
-	Provider         pubsub.Provider
 	Hostname         string
+	Provider         pubsub.Provider
+	SalesforceClient common.SalesforceClient
 }
 
 type BaseSubscriber struct {
+	Config           *config.Config
 	Db               *gorm.DB
+	FilesComClient   common.FilesComClient
+	Name             string
 	Options          pubsub.HandlerOptions
 	Reports          map[string]config.Report
 	SalesforceClient common.SalesforceClient
-	FilesComClient   common.FilesComClient
-	Config           *config.Config
-	Name             string
 }
 
 func (s *BaseSubscriber) Setup(c *pubsub.Client) {
@@ -46,20 +46,20 @@ func (s *BaseSubscriber) Setup(c *pubsub.Client) {
 }
 
 type ReportToExecute struct {
-	Name, BaseDir, Subscriber, FileName string
 	File                                *db.File
+	Name, BaseDir, Subscriber, FileName string
+	Output                              []byte
 	Scripts                             map[string]string
 	Timeout                             time.Duration
-	Output                              []byte
 }
 
 type ReportRunner struct {
 	Config                    *config.Config
-	Reports                   []ReportToExecute
-	SalesforceClient          common.SalesforceClient
+	Db                        *gorm.DB
 	FilescomClient            common.FilesComClient
 	Name, Subscriber, Basedir string
-	Db                        *gorm.DB
+	Reports                   []ReportToExecute
+	SalesforceClient          common.SalesforceClient
 }
 
 func RunWithTimeout(baseDir string, timeout time.Duration, command string) ([]byte, error) {
@@ -391,12 +391,13 @@ func NewProcessor(filesClient common.FilesComClient, salesforceClient common.Sal
 	}
 
 	return &Processor{
+		Config:           cfg,
+		Db:               dbConn,
+		FilesClient:      filesClient,
 		Hostname:         hostname,
 		Provider:         provider,
-		FilesClient:      filesClient,
 		SalesforceClient: salesforceClient,
-		Db:               dbConn,
-		Config:           cfg}, nil
+	}, nil
 }
 
 func (p *Processor) getReportsByTopic(topic string) map[string]config.Report {

@@ -35,7 +35,7 @@ func (s *MonitorTestSuite) SetupTest() {
 
 func (s *MonitorTestSuite) TestRunMonitor() {
 	provider := &memory.MemoryProvider{}
-	monitor, err := NewMonitor(&test.FilesComClient{}, &test.SalesforceClient{}, provider, s.config, s.db)
+	monitor, err := NewMonitor(provider, s.config, s.db, &test.SalesforceClientFactory{}, &test.FilesComClientFactory{})
 	assert.Nil(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
