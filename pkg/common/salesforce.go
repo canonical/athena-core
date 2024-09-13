@@ -82,6 +82,7 @@ func (sf *BaseSalesforceClient) GetCaseByNumber(number string) (*Case, error) {
 }
 
 func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) *simpleforce.SObject {
+	log.Debugf("Posting comment for case %s", caseId)
 	return sf.SObject("CaseComment").
 		Set("ParentId", caseId).
 		Set("CommentBody", html.UnescapeString(body)).
@@ -90,15 +91,32 @@ func (sf *BaseSalesforceClient) PostComment(caseId, body string, isPublic bool) 
 }
 
 func (sf *BaseSalesforceClient) PostChatter(caseId, body string, isPublic bool) *simpleforce.SObject {
+	log.Debugf("Posting comment to chatter for case %s", caseId)
 	visibility := "InternalUsers"
 	if isPublic {
 		visibility = "AllUsers"
 	}
-	return sf.SObject("FeedItem").
+	newComment := sf.SObject("FeedItem").
 		Set("ParentId", caseId).
 		Set("Body", body).
 		Set("Visibility", visibility).
 		Create()
+	if newComment != nil {
+		log.Debugf("Successfully posted comment as FeedItem to case %s", caseId)
+		return newComment
+	}
+	log.Warnf("Unable to post comment as FeedItem object to case %s", caseId)
+	newComment = sf.SObject("CaseFeed").
+		Set("ParentId", caseId).
+		Set("Body", body).
+		Set("Visibility", visibility).
+		Create()
+	if newComment != nil {
+		log.Debugf("Successfully posted comment as CaseFeed object to case %s", caseId)
+		return newComment
+	}
+	log.Errorf("Unable to post comment as either FeedItem or CaseFeed object for %s", caseId)
+	return newComment
 }
 
 func GetCaseNumberFromFilename(filename string) (string, error) {

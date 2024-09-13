@@ -18,10 +18,10 @@ docker-compose: docker-build
 	BRANCH=$(shell git branch --show-current | sed -e 's:/:-:g') $${DOCKER_COMPOSE} up --force-recreate --build
 
 .PHONY: devel
-devel:  athena-monitor athena-processor docker-build docker-compose
+devel:  install docker-build docker-compose
 
-.PHONY: common-docker monitor processor
-docker-build: athena-monitor docker-build-monitor athena-processor docker-build-processor docker-build-debug-container
+.PHONY: docker-build monitor processor
+docker-build: install docker-build-monitor docker-build-processor docker-build-debug-container
 
 .PHONY: docker-build-monitor docker-build-processor
 docker-build-monitor docker-build-processor: docker-build-%:
@@ -84,7 +84,7 @@ test:
 install: build
 	rm -rf build
 	mkdir build
-	cp athena-monitor athena-processor build/
+	cp --verbose athena-monitor athena-processor build/
 
 .PHONY: docs
 docs:
