@@ -86,11 +86,14 @@ func (m *Monitor) GetMatchingProcessorByFile(files []db.File) (map[string][]db.F
 	for _, file := range files {
 		var processors []string
 
+		log.Debugf("Analyzing file %s", file.Path)
 		caseNumber, err := common.GetCaseNumberFromFilename(file.Path)
 		if err == nil {
 			sfCase, err = salesforceClient.GetCaseByNumber(caseNumber)
 			if err != nil {
 				log.Warningf("Failed to get a case from number: '%s'", caseNumber)
+			} else {
+				log.Debugf("Found customer '%s' for case number %s", sfCase.Customer, caseNumber)
 			}
 		} else {
 			log.Warningf("Failed to identify case from filename '%s': %s", file.Path, err)

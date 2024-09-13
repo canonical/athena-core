@@ -508,6 +508,7 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 				log.Infof("Processing comment for case %s", caseId)
 				commentChunks := splitComment(renderedComment, p.Config.Salesforce.MaxCommentLength)
 
+				wasPosted := true
 				for i, chunk := range commentChunks {
 					var chunkHeader string
 					if len(commentChunks) > 1 {
@@ -523,16 +524,21 @@ func (p *Processor) BatchSalesforceComments(ctx *context.Context, interval time.
 					}
 					if comment == nil {
 						log.Errorf("Failed to post comment to case id: %s", caseId)
+						wasPosted = false
 						continue
 					}
 				}
 
-				log.Infof("Successfully posted comment on case %s for %d reports", caseId, len(reports))
-				for _, report := range reports {
-					report.Commented = true
-					p.Db.Save(report)
+				if wasPosted {
+					log.Infof("Successfully posted comment on case %s for %d reports", caseId, len(reports))
+					for _, report := range reports {
+						report.Commented = true
+						p.Db.Save(report)
+					}
+					reportMap = nil
+				} else {
+					log.Errorf("Could not post comment to case id: %s", caseId)
 				}
-				reportMap = nil
 			}
 		}
 	}
