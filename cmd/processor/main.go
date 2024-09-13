@@ -41,32 +41,28 @@ func main() {
 		log.Debug(line)
 	}
 
-	filesClient, err := common.NewFilesComClient(cfg.FilesCom.Key, cfg.FilesCom.Endpoint)
-	if err != nil {
-		panic(err)
-	}
-
-	sfClient, err := common.NewSalesforceClient(cfg)
-	if err != nil {
-		panic(err)
-	}
-
 	natsClient, err := nats.NewNats("test-cluster", stan.NatsURL(*natsUrl))
 	if err != nil {
 		panic(err)
 	}
 
-	p, err := processor.NewProcessor(filesClient, sfClient, natsClient, cfg, nil)
+	salesforceClientFactory := &common.BaseSalesforceClientFactory{}
+	filesComClientFactory := &common.BaseFilesComClientFactory{}
+
+	p, err := processor.NewProcessor(filesComClientFactory, salesforceClientFactory, natsClient, cfg, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	if err := p.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient, name, topic string,
+	if err := p.Run(ctx, func(
+		filesComClientFactory common.FilesComClientFactory,
+		salesforceClientFactory common.SalesforceClientFactory,
+		name, topic string,
 		reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber {
 		log.Infof("Subscribing: %s - to topic: %s", name, topic)
-		return processor.NewBaseSubscriber(fc, sf, name, topic, reports, cfg, dbConn)
+		return processor.NewBaseSubscriber(filesComClientFactory, salesforceClientFactory, name, topic, reports, cfg, dbConn)
 	}); err != nil {
 		panic(err)
 	}

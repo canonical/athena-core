@@ -48,11 +48,8 @@ func (s *MockSubscriber) Setup(c *pubsub.Client) {
 }
 
 func (s *ProcessorTestSuite) TestRunProcessor() {
-	filesComClient := test.FilesComClient{}
-	salesforceClient := test.SalesforceClient{}
-
 	provider := &memory.MemoryProvider{}
-	processor, _ := NewProcessor(&filesComClient, &salesforceClient, provider, s.config, s.db)
+	processor, _ := NewProcessor(&test.FilesComClientFactory{}, &test.SalesforceClientFactory{}, provider, s.config, s.db)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -67,7 +64,9 @@ func (s *ProcessorTestSuite) TestRunProcessor() {
 
 	var called = 0
 
-	_ = processor.Run(ctx, func(fc common.FilesComClient, sf common.SalesforceClient,
+	_ = processor.Run(ctx, func(
+		filesComClientFactory common.FilesComClientFactory,
+		salesforceClientFactory common.SalesforceClientFactory,
 		name string, topic string, reports map[string]config.Report, cfg *config.Config, dbConn *gorm.DB) pubsub.Subscriber {
 		var subscriber = MockSubscriber{Options: pubsub.HandlerOptions{
 			Topic:   topic,
