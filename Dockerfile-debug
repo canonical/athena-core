@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
 
-LABEL maintainer="Canonical Sustaining Engineering <edward.hope-morley@canonical.com>"
-LABEL org.opencontainers.image.description "Athena Monitor"
+LABEL maintainer="Canonical Sustaining Engineering <nicolas.bock@canonical.com>"
+LABEL org.opencontainers.image.description "Athena Debug Container"
 
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends apt-utils
