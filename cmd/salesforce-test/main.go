@@ -52,6 +52,12 @@ func main() {
 		panic(err)
 	}
 
+	log.Printf("Using\n")
+	log.Printf("  endpoint: %s", cfg.Salesforce.Endpoint)
+	log.Printf("  username: %s", cfg.Salesforce.Username)
+	log.Printf("  password: '%s'", cfg.Salesforce.Password)
+	log.Printf("  token:    '%s'", cfg.Salesforce.SecurityToken)
+
 	sfClient, err := common.NewSalesforceClient(cfg)
 	if err != nil {
 		panic(err)
